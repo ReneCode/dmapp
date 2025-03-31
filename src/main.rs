@@ -6,7 +6,8 @@ use std::{
     str::SplitWhitespace,
 };
 
-use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
+use serde::ser::{SerializeStruct, Serializer};
+use serde::{Deserialize, Serialize};
 
 mod commandparser;
 
@@ -19,6 +20,7 @@ enum NodeType {
 trait Node: std::fmt::Debug {
     fn get_id(&self) -> &str;
     fn get_node_type(&self) -> &NodeType;
+    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,6 +38,10 @@ impl Node for Page {
 
     fn get_node_type(&self) -> &NodeType {
         &self.node_type
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
     }
 }
 
@@ -55,11 +61,11 @@ impl IdCounter {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
 struct DataModel {
     pages: HashMap<String, Page>,
-
-    #[serde(skip_serializing)]
+    nodes: HashMap<String, Box<dyn Node>>,
+    // #[serde(skip_serializing)]
     id_counter: IdCounter,
 }
 
@@ -68,29 +74,63 @@ impl Default for DataModel {
         DataModel {
             id_counter: IdCounter::default(),
             pages: HashMap::new(),
+            nodes: HashMap::new(),
         }
     }
 }
 
-// impl Serialize for DataModel {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: Serializer,
-//     {
-//         println!("Serializing DataModel ....");
-//         let mut seq = serializer.serialize_map(Some(self.nodes.len()))?;
-//         for (key, value) in &self.nodes {
-//             // seq.serialize_entry(key, value)?;
-//             // seq.serialize_entry(key, value)?;
-//             //     map.serialize_entry(key, value)?;
-//         }
-//         seq.end()
+impl Serialize for DataModel {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("DataModel", 3)?;
 
-//         // serializer..serialize_int(self.id_counter.counter)
+        state.serialize_field("id_counter", &self.id_counter.counter)?;
+        // serialize only the values, the keys are not needed
+        let serialized_pages: Vec<_> = self
+            .pages
+            .iter()
+            .map(|(id, page)| {
+                let page_data = serde_json::to_value(page).map_err(serde::ser::Error::custom)?;
+                Ok(page_data)
+            })
+            .collect::<Result<_, _>>()?;
 
-//         // .end()
-//     }
-// }
+        state.serialize_field("pages", &serialized_pages)?;
+
+        // Serialize nodes by converting them into a vector of serializable representations
+        let serializable_nodes: Vec<_> = self
+            .nodes
+            .iter()
+            .map(|(id, node)| {
+                let node_data = serde_json::to_value(node).map_err(serde::ser::Error::custom)?;
+                Ok(node_data)
+            })
+            .collect::<Result<_, _>>()?;
+        state.serialize_field("nodes", &serializable_nodes)?;
+
+        state.end()
+    }
+}
+
+// Implement Serialize for dyn Node to allow serialization of concrete types
+impl Serialize for dyn Node {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self.get_node_type() {
+            NodeType::Page => {
+                if let Some(page) = self.as_any().downcast_ref::<Page>() {
+                    page.serialize(serializer)
+                } else {
+                    Err(serde::ser::Error::custom("Failed to downcast to Page"))
+                }
+            }
+        }
+    }
+}
 
 fn create_page(dm: &mut DataModel, name: &str) {
     let id = dm.id_counter.next();
@@ -129,21 +169,29 @@ fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
             eprintln!("Error: Unknown node type: {}", node_type);
         }
     }
+}
 
-    // let node_type = parameter.get(0).unwrap_or(&"".to_string());
-    // let para = parameter.get(1).unwrap_or(&"".to_string());
+fn execute_list(dm: &DataModel, parameter: &mut SplitWhitespace<'_>) {
+    let node_type = parameter.next().unwrap_or("").to_string();
 
-    // match parameter.get(0) {
-    //     Some("page") => {
-    //         create_page(dm, para);
-    //     }
-    //     "page" => {
-    //         create_page(dm, para);
-    //     }
-    //     _ => {
-    //         eprintln!("Error: Unknown node type: {}", node_type);
-    //     }
-    // }
+    match node_type.as_str() {
+        "pages" => {
+            for page in dm.pages.values() {
+                println!("Page ID: {}, Name: {}", page.get_id(), page.name);
+            }
+        }
+        "page" => {
+            let id = parameter.next().unwrap_or("").to_string();
+            if let Some(page) = dm.pages.get(&id) {
+                println!("Page ID: {}, Name: {}", page.get_id(), page.name);
+            } else {
+                eprintln!("Error: Page with ID {} not found", id);
+            }
+        }
+        _ => {
+            eprintln!("Error: Unknown node type: {}", node_type);
+        }
+    }
 }
 
 fn main() {
@@ -166,36 +214,12 @@ fn main() {
 
                 match command_name.as_str() {
                     "create" => excecute_create(&mut data_model, &mut parts),
+                    "list" => execute_list(&data_model, &mut parts),
                     "save" => save_data(&data_model),
                     _ => {
                         eprintln!("Error: Unknown command: {}", command_name);
                     }
                 }
-
-                // let mut words = line.split_whitespace();
-                // match words.next() {
-                //     None => {
-                //         eprintln!("Error: Missing command")
-                //     }
-                //     Some("create") => {
-                //         let name = match words.next() {
-                //             Some("page") => {
-                //                 println!("Creating page");
-                //                 create_page(dm, name);
-                //             }
-                //             Some(_) => {
-                //                 eprintln!("Error: create, unknown type");
-                //                 continue;
-                //             }
-                //             None => {
-                //                 eprintln!("Error: create, missing parameter");
-                //             }
-                //         };
-                //     }
-                //     Some(cmd) => {
-                //         eprintln!("Error: Unknown command: {cmd}");
-                //     }
-                // }
             }
             Err(error) => eprintln!("Error reading line: {}", error),
         }
