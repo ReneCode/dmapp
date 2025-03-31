@@ -1,7 +1,18 @@
 {
+  "id_counter": 4,
   "pages": [
-    { "content": "", "id": "1", "name": "abc", "node_type": "Page" },
-    { "content": "", "id": "2", "name": "sldkfjsalj", "node_type": "Page" }
+    { "content": "", "id": "3", "name": "abc", "node_type": "Page" },
+    { "content": "", "id": "2", "name": "hello", "node_type": "Page" },
+    { "content": "", "id": "4", "name": "\"ab", "node_type": "Page" }
   ],
-  "nodes": []
+  "nodes": [
+    {
+      "id": "1",
+      "node_type": "Line",
+      "x1": 10.0,
+      "x2": 50.0,
+      "y1": 20.0,
+      "y2": 20.0
+    }
+  ]
 }

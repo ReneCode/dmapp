@@ -15,6 +15,8 @@ mod commandparser;
 enum NodeType {
     // Root,
     Page,
+    Line,
+    Arc,
 }
 
 trait Node: std::fmt::Debug {
@@ -42,6 +44,53 @@ impl Node for Page {
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Line {
+    node_type: NodeType,
+    id: String,
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+}
+
+impl Node for Line {
+    fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    fn get_node_type(&self) -> &NodeType {
+        &self.node_type
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+
+impl Page {
+    fn new(id: String, name: String, content: String) -> Self {
+        Page {
+            node_type: NodeType::Page,
+            id,
+            name,
+            content,
+        }
+    }
+}
+impl Line {
+    fn new(id: String, x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
+        Line {
+            node_type: NodeType::Line,
+            id,
+            x1,
+            y1,
+            x2,
+            y2,
+        }
     }
 }
 
@@ -128,6 +177,19 @@ impl Serialize for dyn Node {
                     Err(serde::ser::Error::custom("Failed to downcast to Page"))
                 }
             }
+            NodeType::Line => {
+                if let Some(line) = self.as_any().downcast_ref::<Line>() {
+                    line.serialize(serializer)
+                } else {
+                    Err(serde::ser::Error::custom("Failed to downcast to Line"))
+                }
+            }
+            NodeType::Arc => {
+                // Implement serialization for Arc if needed
+                Err(serde::ser::Error::custom(
+                    "Arc serialization not implemented",
+                ))
+            }
         }
     }
 }
@@ -164,6 +226,17 @@ fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
         "page" => {
             let name = parameter.next().unwrap_or("").to_string();
             create_page(dm, &name);
+        }
+        "line" => {
+            let id = dm.id_counter.next();
+
+            let x1: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
+            let y1: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
+            let x2: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
+            let y2: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
+
+            let line = Line::new(id.clone(), x1, y1, x2, y2);
+            dm.nodes.insert(id, Box::new(line));
         }
         _ => {
             eprintln!("Error: Unknown node type: {}", node_type);
