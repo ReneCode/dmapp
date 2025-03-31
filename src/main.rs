@@ -1,4 +1,5 @@
 use core::f64;
+use core::fmt::Debug;
 use std::{
     collections::HashMap,
     fmt::Display,
@@ -50,7 +51,7 @@ struct Page {
     node_type: NodeType,
     id: String,
     name: String,
-    content: String,
+    description: String,
 }
 
 impl Node for Page {
@@ -134,7 +135,7 @@ impl Page {
             node_type: NodeType::Page,
             id,
             name,
-            content,
+            description: content,
         }
     }
 }
@@ -173,6 +174,12 @@ struct DataModel {
     nodes: HashMap<String, Box<dyn Node>>,
     // #[serde(skip_serializing)]
     id_counter: IdCounter,
+    undo_stack: Vec<Box<dyn Command>>,
+}
+impl DataModel {
+    fn add_command(&mut self, cmd: Box<dyn Command>) {
+        self.undo_stack.push(cmd);
+    }
 }
 
 impl Default for DataModel {
@@ -181,6 +188,7 @@ impl Default for DataModel {
             id_counter: IdCounter::default(),
             pages: HashMap::new(),
             nodes: HashMap::new(),
+            undo_stack: Vec::new(),
         }
     }
 }
@@ -252,18 +260,116 @@ impl Serialize for dyn Node {
     }
 }
 
-fn create_page(dm: &mut DataModel, name: &str) {
-    let id = dm.id_counter.next();
+// impl Debug for dyn Command {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         self.fmt(f)
+//     }
+// }
 
-    let page = Page {
-        node_type: NodeType::Page,
-        id: id.to_string(),
-        name: name.to_string(),
-        content: "".to_string(),
-    };
+trait Command: std::fmt::Debug {
+    fn execute(&self, dm: &mut DataModel);
+    fn undo(&self, dm: &mut DataModel);
+    // fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    //     write!(f, "Command")
+    // }
+}
 
-    println!("Creating page: {:?}", page);
-    dm.pages.insert(id.to_string(), page);
+#[derive(Debug)]
+struct CreatePageCommand {
+    id: String,
+    name: String,
+    description: String,
+}
+impl Command for CreatePageCommand {
+    fn execute(&self, dm: &mut DataModel) {
+        let page = Page::new(self.id.clone(), self.name.clone(), self.description.clone());
+        dm.pages.insert(self.id.clone(), page);
+    }
+
+    fn undo(&self, dm: &mut DataModel) {
+        dm.pages.remove(&self.id);
+    }
+}
+impl CreatePageCommand {
+    fn new(id: String, name: String, description: String) -> Self {
+        CreatePageCommand {
+            id,
+            name,
+            description,
+        }
+    }
+}
+
+// impl Display for CreatePageCommand {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         write!(
+//             f,
+//             "CreatePageCommand: id={}, name={}, description={}",
+//             self.id, self.name, self.description
+//         )
+//     }
+// }
+
+#[derive(Debug)]
+struct CreateLineCommand {
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
+}
+impl Command for CreateLineCommand {
+    fn execute(&self, dm: &mut DataModel) {
+        let id = dm.id_counter.next();
+        let line = Line::new(id.clone(), self.x1, self.y1, self.x2, self.y2);
+        dm.nodes.insert(id, Box::new(line));
+    }
+
+    fn undo(&self, dm: &mut DataModel) {
+        // Undo logic for creating a line
+    }
+}
+impl CreateLineCommand {
+    fn new(x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
+        CreateLineCommand { x1, y1, x2, y2 }
+    }
+}
+
+#[derive(Debug)]
+struct CreateArcCommand {
+    x: f64,
+    y: f64,
+    r: f64,
+    angle_start: f64,
+    angle_end: f64,
+}
+impl Command for CreateArcCommand {
+    fn execute(&self, dm: &mut DataModel) {
+        let id = dm.id_counter.next();
+        let arc = Arc::new(
+            id.clone(),
+            self.x,
+            self.y,
+            self.r,
+            self.angle_start,
+            self.angle_end,
+        );
+        dm.nodes.insert(id, Box::new(arc));
+    }
+
+    fn undo(&self, dm: &mut DataModel) {
+        // Undo logic for creating an arc
+    }
+}
+impl CreateArcCommand {
+    fn new(x: f64, y: f64, r: f64, angle_start: f64, angle_end: f64) -> Self {
+        CreateArcCommand {
+            x,
+            y,
+            r,
+            angle_start,
+            angle_end,
+        }
+    }
 }
 
 fn save_data(dm: &DataModel) {
@@ -283,32 +389,36 @@ fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
     let node_type = NodeType::from(node_type_str.as_str());
     match node_type {
         NodeType::Page => {
-            let name = parameter.next().unwrap_or("").to_string();
-            create_page(dm, &name);
+            let cmd = CreatePageCommand::new(
+                dm.id_counter.next(),
+                parameter.next().unwrap_or("new-page").to_string(),
+                parameter.next().unwrap_or("page-description").to_string(),
+            );
+
+            cmd.execute(dm);
+            dm.add_command(Box::new(cmd));
         }
         NodeType::Line => {
-            let id = dm.id_counter.next();
-
             let x1: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let y1: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let x2: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let y2: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
 
-            let line = Line::new(id.clone(), x1, y1, x2, y2);
-            dm.nodes.insert(id, Box::new(line));
+            let cmd = CreateLineCommand::new(x1, y1, x2, y2);
+            cmd.execute(dm);
+            dm.add_command(Box::new(cmd));
         }
 
         NodeType::Arc => {
-            let id = dm.id_counter.next();
-
             let x: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let y: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let r: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let angle_start: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let angle_end: f64 = parameter.next().unwrap_or("360.0").parse().unwrap_or(0.0);
 
-            let arc = Arc::new(id.clone(), x, y, r, angle_start, angle_end);
-            dm.nodes.insert(id, Box::new(arc));
+            let cmd = CreateArcCommand::new(x, y, r, angle_start, angle_end);
+            cmd.execute(dm);
+            dm.add_command(Box::new(cmd));
         }
         _ => {
             eprintln!("Error: Unknown node type: {}", node_type);
@@ -361,6 +471,15 @@ fn execute_list(dm: &DataModel, parameter: &mut SplitWhitespace<'_>) {
     }
 }
 
+// fn undo(dm: &mut DataModel) {
+//     if let Some(cmd) = dm.undo_stack.last() {
+//         cmd.undo(&mut dm);
+//         println!("Undoing last command: {:?}", cmd);
+//     } else {
+//         println!("No commands to undo");
+//     }
+// }
+
 fn main() {
     let stdin = io::stdin();
     let handle = stdin.lock();
@@ -383,6 +502,16 @@ fn main() {
                     "create" => excecute_create(&mut data_model, &mut parts),
                     "list" => execute_list(&data_model, &mut parts),
                     "save" => save_data(&data_model),
+                    "undo" => {
+                        // undo from the dm.undo_stack
+                        if let Some(cmd) = data_model.undo_stack.pop() {
+                            cmd.undo(&mut data_model);
+                            println!("Undoing last command: {:?}", cmd);
+                        } else {
+                            println!("No commands to undo");
+                        }
+                    }
+                    // undo(&mut data_model),
                     _ => {
                         eprintln!("Error: Unknown command: {}", command_name);
                     }
