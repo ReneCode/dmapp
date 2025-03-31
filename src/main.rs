@@ -1,8 +1,9 @@
+use core::f64;
 use std::{
     collections::HashMap,
+    fmt::Display,
     fs::File,
-    io::Write,
-    io::{self, BufRead},
+    io::{self, BufRead, Write},
     str::SplitWhitespace,
 };
 
@@ -17,6 +18,25 @@ enum NodeType {
     Page,
     Line,
     Arc,
+}
+impl Display for NodeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NodeType::Page => write!(f, "Page"),
+            NodeType::Line => write!(f, "Line"),
+            NodeType::Arc => write!(f, "Arc"),
+        }
+    }
+}
+impl From<&str> for NodeType {
+    fn from(s: &str) -> Self {
+        match s {
+            "page" => NodeType::Page,
+            "line" => NodeType::Line,
+            "arc" => NodeType::Arc,
+            _ => panic!("Invalid node type"),
+        }
+    }
 }
 
 trait Node: std::fmt::Debug {
@@ -68,6 +88,43 @@ impl Node for Line {
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Arc {
+    node_type: NodeType,
+    id: String,
+    x: f64,
+    y: f64,
+    r: f64,
+    angle_start: f64,
+    angle_end: f64,
+}
+impl Node for Arc {
+    fn get_id(&self) -> &str {
+        self.id.as_str()
+    }
+
+    fn get_node_type(&self) -> &NodeType {
+        &self.node_type
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
+impl Arc {
+    fn new(id: String, x: f64, y: f64, r: f64, angle_start: f64, angle_end: f64) -> Self {
+        Arc {
+            node_type: NodeType::Arc,
+            id,
+            x,
+            y,
+            r,
+            angle_start,
+            angle_end,
+        }
     }
 }
 
@@ -185,10 +242,11 @@ impl Serialize for dyn Node {
                 }
             }
             NodeType::Arc => {
-                // Implement serialization for Arc if needed
-                Err(serde::ser::Error::custom(
-                    "Arc serialization not implemented",
-                ))
+                if let Some(arc) = self.as_any().downcast_ref::<Arc>() {
+                    arc.serialize(serializer)
+                } else {
+                    Err(serde::ser::Error::custom("Failed to downcast to Arc"))
+                }
             }
         }
     }
@@ -220,14 +278,15 @@ fn save_data(dm: &DataModel) {
 }
 
 fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
-    let node_type = parameter.next().unwrap_or("").to_string();
+    let node_type_str = parameter.next().unwrap_or("").to_string();
 
-    match node_type.as_str() {
-        "page" => {
+    let node_type = NodeType::from(node_type_str.as_str());
+    match node_type {
+        NodeType::Page => {
             let name = parameter.next().unwrap_or("").to_string();
             create_page(dm, &name);
         }
-        "line" => {
+        NodeType::Line => {
             let id = dm.id_counter.next();
 
             let x1: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
@@ -237,6 +296,19 @@ fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
 
             let line = Line::new(id.clone(), x1, y1, x2, y2);
             dm.nodes.insert(id, Box::new(line));
+        }
+
+        NodeType::Arc => {
+            let id = dm.id_counter.next();
+
+            let x: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
+            let y: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
+            let r: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
+            let angle_start: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
+            let angle_end: f64 = parameter.next().unwrap_or("360.0").parse().unwrap_or(0.0);
+
+            let arc = Arc::new(id.clone(), x, y, r, angle_start, angle_end);
+            dm.nodes.insert(id, Box::new(arc));
         }
         _ => {
             eprintln!("Error: Unknown node type: {}", node_type);
@@ -261,6 +333,28 @@ fn execute_list(dm: &DataModel, parameter: &mut SplitWhitespace<'_>) {
                 eprintln!("Error: Page with ID {} not found", id);
             }
         }
+        "lines" => {
+            for node in dm.nodes.values() {
+                match node.get_node_type() {
+                    NodeType::Line => {
+                        if let Some(line) = node.as_any().downcast_ref::<Line>() {
+                            println!(
+                                "Line ID: {}, Coordinates: ({}, {}), ({}, {})",
+                                line.get_id(),
+                                line.x1,
+                                line.y1,
+                                line.x2,
+                                line.y2
+                            );
+                        }
+                    }
+                    _ => {
+                        eprintln!("Error: unhandled node type {}", node.get_node_type());
+                    }
+                }
+            }
+        }
+
         _ => {
             eprintln!("Error: Unknown node type: {}", node_type);
         }
