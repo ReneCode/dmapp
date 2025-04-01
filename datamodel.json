@@ -1,1 +1,12 @@
-{"id_counter":2,"pages":[],"nodes":[]}
+{
+  "id_counter": 2,
+  "pages": [
+    {
+      "description": "safasdf",
+      "id": "1",
+      "name": "sadfk",
+      "node_type": "Page"
+    }
+  ],
+  "nodes": []
+}

@@ -11,304 +11,21 @@ use std::{
 use serde::ser::{SerializeStruct, Serializer};
 use serde::{Deserialize, Serialize};
 
+mod arc;
+mod command;
+mod datamodel;
+mod line;
+mod node;
+mod page;
+
+use arc::Arc;
+use command::Command;
+use command::CreatePageCommand;
+use datamodel::DataModel;
+use line::Line;
+use node::{Node, NodeType};
+use page::Page;
 mod commandparser;
-
-#[derive(Debug, Serialize, Deserialize)]
-enum NodeType {
-    // Root,
-    Page,
-    Line,
-    Arc,
-}
-impl Display for NodeType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            NodeType::Page => write!(f, "Page"),
-            NodeType::Line => write!(f, "Line"),
-            NodeType::Arc => write!(f, "Arc"),
-        }
-    }
-}
-impl From<&str> for NodeType {
-    fn from(s: &str) -> Self {
-        match s {
-            "page" => NodeType::Page,
-            "line" => NodeType::Line,
-            "arc" => NodeType::Arc,
-            _ => panic!("Invalid node type"),
-        }
-    }
-}
-
-trait Node: std::fmt::Debug {
-    fn get_id(&self) -> &str;
-    fn get_node_type(&self) -> &NodeType;
-    fn as_any(&self) -> &dyn std::any::Any;
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Page {
-    node_type: NodeType,
-    id: String,
-    name: String,
-    description: String,
-}
-
-impl Node for Page {
-    fn get_id(&self) -> &str {
-        self.id.as_str()
-    }
-
-    fn get_node_type(&self) -> &NodeType {
-        &self.node_type
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Line {
-    node_type: NodeType,
-    id: String,
-    x1: f64,
-    y1: f64,
-    x2: f64,
-    y2: f64,
-}
-
-impl Node for Line {
-    fn get_id(&self) -> &str {
-        self.id.as_str()
-    }
-
-    fn get_node_type(&self) -> &NodeType {
-        &self.node_type
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Arc {
-    node_type: NodeType,
-    id: String,
-    x: f64,
-    y: f64,
-    r: f64,
-    angle_start: f64,
-    angle_end: f64,
-}
-impl Node for Arc {
-    fn get_id(&self) -> &str {
-        self.id.as_str()
-    }
-
-    fn get_node_type(&self) -> &NodeType {
-        &self.node_type
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-}
-impl Arc {
-    fn new(id: String, x: f64, y: f64, r: f64, angle_start: f64, angle_end: f64) -> Self {
-        Arc {
-            node_type: NodeType::Arc,
-            id,
-            x,
-            y,
-            r,
-            angle_start,
-            angle_end,
-        }
-    }
-}
-
-impl Page {
-    fn new(id: String, name: String, content: String) -> Self {
-        Page {
-            node_type: NodeType::Page,
-            id,
-            name,
-            description: content,
-        }
-    }
-}
-impl Line {
-    fn new(id: String, x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
-        Line {
-            node_type: NodeType::Line,
-            id,
-            x1,
-            y1,
-            x2,
-            y2,
-        }
-    }
-}
-
-#[derive(Debug)]
-struct IdCounter {
-    counter: u64,
-}
-impl Default for IdCounter {
-    fn default() -> Self {
-        IdCounter { counter: 0 }
-    }
-}
-impl IdCounter {
-    fn next(&mut self) -> String {
-        self.counter += 1;
-        self.counter.to_string()
-    }
-}
-
-#[derive(Debug)]
-struct DataModel {
-    pages: HashMap<String, Page>,
-    nodes: HashMap<String, Box<dyn Node>>,
-    // #[serde(skip_serializing)]
-    id_counter: IdCounter,
-    undo_stack: Vec<Box<dyn Command>>,
-}
-impl DataModel {
-    fn add_command(&mut self, cmd: Box<dyn Command>) {
-        self.undo_stack.push(cmd);
-    }
-}
-
-impl Default for DataModel {
-    fn default() -> Self {
-        DataModel {
-            id_counter: IdCounter::default(),
-            pages: HashMap::new(),
-            nodes: HashMap::new(),
-            undo_stack: Vec::new(),
-        }
-    }
-}
-
-impl Serialize for DataModel {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut state = serializer.serialize_struct("DataModel", 3)?;
-
-        state.serialize_field("id_counter", &self.id_counter.counter)?;
-        // serialize only the values, the keys are not needed
-        let serialized_pages: Vec<_> = self
-            .pages
-            .iter()
-            .map(|(id, page)| {
-                let page_data = serde_json::to_value(page).map_err(serde::ser::Error::custom)?;
-                Ok(page_data)
-            })
-            .collect::<Result<_, _>>()?;
-
-        state.serialize_field("pages", &serialized_pages)?;
-
-        // Serialize nodes by converting them into a vector of serializable representations
-        let serializable_nodes: Vec<_> = self
-            .nodes
-            .iter()
-            .map(|(id, node)| {
-                let node_data = serde_json::to_value(node).map_err(serde::ser::Error::custom)?;
-                Ok(node_data)
-            })
-            .collect::<Result<_, _>>()?;
-        state.serialize_field("nodes", &serializable_nodes)?;
-
-        state.end()
-    }
-}
-
-// Implement Serialize for dyn Node to allow serialization of concrete types
-impl Serialize for dyn Node {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self.get_node_type() {
-            NodeType::Page => {
-                if let Some(page) = self.as_any().downcast_ref::<Page>() {
-                    page.serialize(serializer)
-                } else {
-                    Err(serde::ser::Error::custom("Failed to downcast to Page"))
-                }
-            }
-            NodeType::Line => {
-                if let Some(line) = self.as_any().downcast_ref::<Line>() {
-                    line.serialize(serializer)
-                } else {
-                    Err(serde::ser::Error::custom("Failed to downcast to Line"))
-                }
-            }
-            NodeType::Arc => {
-                if let Some(arc) = self.as_any().downcast_ref::<Arc>() {
-                    arc.serialize(serializer)
-                } else {
-                    Err(serde::ser::Error::custom("Failed to downcast to Arc"))
-                }
-            }
-        }
-    }
-}
-
-// impl Debug for dyn Command {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         self.fmt(f)
-//     }
-// }
-
-trait Command: std::fmt::Debug {
-    fn execute(&self, dm: &mut DataModel);
-    fn undo(&self, dm: &mut DataModel);
-    // fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    //     write!(f, "Command")
-    // }
-}
-
-#[derive(Debug)]
-struct CreatePageCommand {
-    id: String,
-    name: String,
-    description: String,
-}
-impl Command for CreatePageCommand {
-    fn execute(&self, dm: &mut DataModel) {
-        let page = Page::new(self.id.clone(), self.name.clone(), self.description.clone());
-        dm.pages.insert(self.id.clone(), page);
-    }
-
-    fn undo(&self, dm: &mut DataModel) {
-        dm.pages.remove(&self.id);
-    }
-}
-impl CreatePageCommand {
-    fn new(id: String, name: String, description: String) -> Self {
-        CreatePageCommand {
-            id,
-            name,
-            description,
-        }
-    }
-}
-
-// impl Display for CreatePageCommand {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(
-//             f,
-//             "CreatePageCommand: id={}, name={}, description={}",
-//             self.id, self.name, self.description
-//         )
-//     }
-// }
 
 #[derive(Debug)]
 struct CreateLineCommand {
@@ -319,9 +36,9 @@ struct CreateLineCommand {
 }
 impl Command for CreateLineCommand {
     fn execute(&self, dm: &mut DataModel) {
-        let id = dm.id_counter.next();
+        let id = dm.next_id();
         let line = Line::new(id.clone(), self.x1, self.y1, self.x2, self.y2);
-        dm.nodes.insert(id, Box::new(line));
+        dm.insert_node(Box::new(line));
     }
 
     fn undo(&self, dm: &mut DataModel) {
@@ -344,7 +61,7 @@ struct CreateArcCommand {
 }
 impl Command for CreateArcCommand {
     fn execute(&self, dm: &mut DataModel) {
-        let id = dm.id_counter.next();
+        let id = dm.next_id();
         let arc = Arc::new(
             id.clone(),
             self.x,
@@ -353,7 +70,7 @@ impl Command for CreateArcCommand {
             self.angle_start,
             self.angle_end,
         );
-        dm.nodes.insert(id, Box::new(arc));
+        dm.insert_node(Box::new(arc));
     }
 
     fn undo(&self, dm: &mut DataModel) {
@@ -373,10 +90,7 @@ impl CreateArcCommand {
 }
 
 fn save_data(dm: &DataModel) {
-    println!("Saving data ...");
-
     let serialized = serde_json::to_string(dm).unwrap();
-    println!("Serialized: {}", serialized);
 
     let mut file = File::create("datamodel.json").expect("Unable to create file");
     file.write_all(serialized.as_bytes())
@@ -390,7 +104,7 @@ fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
     match node_type {
         NodeType::Page => {
             let cmd = CreatePageCommand::new(
-                dm.id_counter.next(),
+                dm.next_id(),
                 parameter.next().unwrap_or("new-page").to_string(),
                 parameter.next().unwrap_or("page-description").to_string(),
             );
@@ -431,30 +145,30 @@ fn execute_list(dm: &DataModel, parameter: &mut SplitWhitespace<'_>) {
 
     match node_type.as_str() {
         "pages" => {
-            for page in dm.pages.values() {
-                println!("Page ID: {}, Name: {}", page.get_id(), page.name);
+            for page in dm.get_pages() {
+                println!("Page ID: {}, Name: {}", page.get_id(), page.get_name());
             }
         }
         "page" => {
             let id = parameter.next().unwrap_or("").to_string();
-            if let Some(page) = dm.pages.get(&id) {
-                println!("Page ID: {}, Name: {}", page.get_id(), page.name);
+            if let Some(page) = dm.get_page(&id) {
+                println!("Page ID: {}, Name: {}", page.get_id(), page.get_name());
             } else {
                 eprintln!("Error: Page with ID {} not found", id);
             }
         }
         "lines" => {
-            for node in dm.nodes.values() {
+            for node in dm.get_nodes() {
                 match node.get_node_type() {
                     NodeType::Line => {
                         if let Some(line) = node.as_any().downcast_ref::<Line>() {
                             println!(
                                 "Line ID: {}, Coordinates: ({}, {}), ({}, {})",
                                 line.get_id(),
-                                line.x1,
-                                line.y1,
-                                line.x2,
-                                line.y2
+                                line.get_x1(),
+                                line.get_y1(),
+                                line.get_x2(),
+                                line.get_y2()
                             );
                         }
                     }
@@ -504,7 +218,7 @@ fn main() {
                     "save" => save_data(&data_model),
                     "undo" => {
                         // undo from the dm.undo_stack
-                        if let Some(cmd) = data_model.undo_stack.pop() {
+                        if let Some(cmd) = data_model.undo_pop() {
                             cmd.undo(&mut data_model);
                             println!("Undoing last command: {:?}", cmd);
                         } else {
