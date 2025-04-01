@@ -1,15 +1,10 @@
 use core::f64;
 use core::fmt::Debug;
 use std::{
-    collections::HashMap,
-    fmt::Display,
     fs::File,
     io::{self, BufRead, Write},
     str::SplitWhitespace,
 };
-
-use serde::ser::{SerializeStruct, Serializer};
-use serde::{Deserialize, Serialize};
 
 mod arc;
 mod command;
@@ -24,11 +19,34 @@ use command::CreatePageCommand;
 use datamodel::DataModel;
 use line::Line;
 use node::{Node, NodeType};
-use page::Page;
-mod commandparser;
+
+// #[derive(Debug)]
+// struct CommandHandler {
+//     undo_stack: Vec<Box<dyn Command>>,
+// }
+
+// impl CommandHandler {
+//     pub fn execute(&mut self, dm: &mut DataModel, command: Box<dyn Command>) {
+//         command.execute(dm);
+//         self.undo_stack.push(command);
+//     }
+//     pub fn undo(&mut self, dm: &mut DataModel) {
+//         if let Some(cmd) = self.undo_stack.pop() {
+//             cmd.undo(dm);
+//         } else {
+//             println!("No commands to undo");
+//         }
+//     }
+//     pub fn list_commands(&self) {
+//         for cmd in &self.undo_stack {
+//             println!("{:?}", cmd);
+//         }
+//     }
+// }
 
 #[derive(Debug)]
 struct CreateLineCommand {
+    id: String,
     x1: f64,
     y1: f64,
     x2: f64,
@@ -36,23 +54,23 @@ struct CreateLineCommand {
 }
 impl Command for CreateLineCommand {
     fn execute(&self, dm: &mut DataModel) {
-        let id = dm.next_id();
-        let line = Line::new(id.clone(), self.x1, self.y1, self.x2, self.y2);
+        let line = Line::new(self.id.clone(), self.x1, self.y1, self.x2, self.y2);
         dm.insert_node(Box::new(line));
     }
 
     fn undo(&self, dm: &mut DataModel) {
-        // Undo logic for creating a line
+        dm.remove_node(&self.id);
     }
 }
 impl CreateLineCommand {
-    fn new(x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
-        CreateLineCommand { x1, y1, x2, y2 }
+    fn new(id: String, x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
+        CreateLineCommand { id, x1, y1, x2, y2 }
     }
 }
 
 #[derive(Debug)]
 struct CreateArcCommand {
+    id: String,
     x: f64,
     y: f64,
     r: f64,
@@ -61,9 +79,8 @@ struct CreateArcCommand {
 }
 impl Command for CreateArcCommand {
     fn execute(&self, dm: &mut DataModel) {
-        let id = dm.next_id();
         let arc = Arc::new(
-            id.clone(),
+            self.id.clone(),
             self.x,
             self.y,
             self.r,
@@ -74,12 +91,13 @@ impl Command for CreateArcCommand {
     }
 
     fn undo(&self, dm: &mut DataModel) {
-        // Undo logic for creating an arc
+        dm.remove_node(&self.id);
     }
 }
 impl CreateArcCommand {
-    fn new(x: f64, y: f64, r: f64, angle_start: f64, angle_end: f64) -> Self {
+    fn new(id: String, x: f64, y: f64, r: f64, angle_start: f64, angle_end: f64) -> Self {
         CreateArcCommand {
+            id,
             x,
             y,
             r,
@@ -99,7 +117,6 @@ fn save_data(dm: &DataModel) {
 
 fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
     let node_type_str = parameter.next().unwrap_or("").to_string();
-
     let node_type = NodeType::from(node_type_str.as_str());
     match node_type {
         NodeType::Page => {
@@ -109,8 +126,7 @@ fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
                 parameter.next().unwrap_or("page-description").to_string(),
             );
 
-            cmd.execute(dm);
-            dm.add_command(Box::new(cmd));
+            dm.execute_command(Box::new(cmd));
         }
         NodeType::Line => {
             let x1: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
@@ -118,9 +134,8 @@ fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
             let x2: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let y2: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
 
-            let cmd = CreateLineCommand::new(x1, y1, x2, y2);
-            cmd.execute(dm);
-            dm.add_command(Box::new(cmd));
+            let cmd = CreateLineCommand::new(dm.next_id(), x1, y1, x2, y2);
+            dm.execute_command(Box::new(cmd));
         }
 
         NodeType::Arc => {
@@ -130,13 +145,11 @@ fn excecute_create(dm: &mut DataModel, parameter: &mut SplitWhitespace<'_>) {
             let angle_start: f64 = parameter.next().unwrap_or("0.0").parse().unwrap_or(0.0);
             let angle_end: f64 = parameter.next().unwrap_or("360.0").parse().unwrap_or(0.0);
 
-            let cmd = CreateArcCommand::new(x, y, r, angle_start, angle_end);
-            cmd.execute(dm);
-            dm.add_command(Box::new(cmd));
-        }
-        _ => {
-            eprintln!("Error: Unknown node type: {}", node_type);
-        }
+            let cmd = CreateArcCommand::new(dm.next_id(), x, y, r, angle_start, angle_end);
+            dm.execute_command(Box::new(cmd));
+        } // _ => {
+          //     eprintln!("Error: Unknown node type: {}", node_type);
+          // }
     }
 }
 
@@ -144,6 +157,9 @@ fn execute_list(dm: &DataModel, parameter: &mut SplitWhitespace<'_>) {
     let node_type = parameter.next().unwrap_or("").to_string();
 
     match node_type.as_str() {
+        "commands" => {
+            dm.list_commands();
+        }
         "pages" => {
             for page in dm.get_pages() {
                 println!("Page ID: {}, Name: {}", page.get_id(), page.get_name());
@@ -216,16 +232,7 @@ fn main() {
                     "create" => excecute_create(&mut data_model, &mut parts),
                     "list" => execute_list(&data_model, &mut parts),
                     "save" => save_data(&data_model),
-                    "undo" => {
-                        // undo from the dm.undo_stack
-                        if let Some(cmd) = data_model.undo_pop() {
-                            cmd.undo(&mut data_model);
-                            println!("Undoing last command: {:?}", cmd);
-                        } else {
-                            println!("No commands to undo");
-                        }
-                    }
-                    // undo(&mut data_model),
+                    "undo" => data_model.undo(),
                     _ => {
                         eprintln!("Error: Unknown command: {}", command_name);
                     }

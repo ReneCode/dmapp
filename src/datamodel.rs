@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use serde::ser::{SerializeStruct, Serializer};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use std::collections::HashMap;
 
@@ -8,14 +8,9 @@ use crate::command::Command;
 use crate::node::Node;
 use crate::page::Page;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct IdCounter {
     counter: u64,
-}
-impl Default for IdCounter {
-    fn default() -> Self {
-        IdCounter { counter: 0 }
-    }
 }
 impl IdCounter {
     fn next(&mut self) -> String {
@@ -24,7 +19,7 @@ impl IdCounter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DataModel {
     pages: HashMap<String, Page>,
     nodes: HashMap<String, Box<dyn Node>>,
@@ -33,8 +28,21 @@ pub struct DataModel {
     undo_stack: Vec<Box<dyn Command>>,
 }
 impl DataModel {
-    pub fn add_command(&mut self, cmd: Box<dyn Command>) {
+    pub fn execute_command(&mut self, cmd: Box<dyn Command>) {
+        cmd.execute(self);
         self.undo_stack.push(cmd);
+    }
+    pub fn undo(&mut self) {
+        if let Some(cmd) = self.undo_stack.pop() {
+            cmd.undo(self);
+        } else {
+            println!("No commands to undo");
+        }
+    }
+    pub fn list_commands(&self) {
+        for cmd in &self.undo_stack {
+            println!("{:?}", cmd);
+        }
     }
 
     pub fn next_id(&mut self) -> String {
@@ -66,26 +74,6 @@ impl DataModel {
         let result = self.nodes.values().collect_vec();
         result
     }
-
-    pub fn undo_pop(&mut self) -> Option<Box<dyn Command>> {
-        if let Some(cmd) = self.undo_stack.pop() {
-            cmd.undo(self);
-            Some(cmd)
-        } else {
-            None
-        }
-    }
-}
-
-impl Default for DataModel {
-    fn default() -> Self {
-        DataModel {
-            id_counter: IdCounter::default(),
-            pages: HashMap::new(),
-            nodes: HashMap::new(),
-            undo_stack: Vec::new(),
-        }
-    }
 }
 
 impl Serialize for DataModel {
@@ -99,8 +87,8 @@ impl Serialize for DataModel {
         // serialize only the values, the keys are not needed
         let serialized_pages: Vec<_> = self
             .pages
-            .iter()
-            .map(|(id, page)| {
+            .values()
+            .map(|page| {
                 let page_data = serde_json::to_value(page).map_err(serde::ser::Error::custom)?;
                 Ok(page_data)
             })
@@ -111,8 +99,8 @@ impl Serialize for DataModel {
         // Serialize nodes by converting them into a vector of serializable representations
         let serializable_nodes: Vec<_> = self
             .nodes
-            .iter()
-            .map(|(id, node)| {
+            .values()
+            .map(|node| {
                 let node_data = serde_json::to_value(node).map_err(serde::ser::Error::custom)?;
                 Ok(node_data)
             })
