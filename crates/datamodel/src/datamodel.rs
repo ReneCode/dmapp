@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use std::collections::HashMap;
 
-use crate::command::Command;
+// use crate::command::Command;
 use crate::node::Node;
 use crate::page::Page;
 
@@ -25,26 +25,8 @@ pub struct DataModel {
     nodes: HashMap<String, Box<dyn Node>>,
     // #[serde(skip_serializing)]
     id_counter: IdCounter,
-    undo_stack: Vec<Box<dyn Command>>,
 }
 impl DataModel {
-    pub fn execute_command(&mut self, cmd: Box<dyn Command>) {
-        cmd.execute(self);
-        self.undo_stack.push(cmd);
-    }
-    pub fn undo(&mut self) {
-        if let Some(cmd) = self.undo_stack.pop() {
-            cmd.undo(self);
-        } else {
-            println!("No commands to undo");
-        }
-    }
-    pub fn list_commands(&self) {
-        for cmd in &self.undo_stack {
-            println!("{:?}", cmd);
-        }
-    }
-
     pub fn next_id(&mut self) -> String {
         self.id_counter.next()
     }

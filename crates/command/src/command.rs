@@ -1,7 +1,4 @@
-use crate::datamodel::DataModel;
-
-mod createpagecommand;
-pub use createpagecommand::CreatePageCommand;
+use datamodel::DataModel;
 
 pub trait Command: std::fmt::Debug {
     fn execute(&self, dm: &mut DataModel);

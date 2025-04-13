@@ -1,1 +1,14 @@
-{"id_counter":3,"pages":[],"nodes":[]}
+{
+  "id_counter": 1,
+  "pages": [],
+  "nodes": [
+    {
+      "id": "1",
+      "node_type": "Line",
+      "x1": 3.0,
+      "x2": 2.0,
+      "y1": 5.0,
+      "y2": 6.0
+    }
+  ]
+}

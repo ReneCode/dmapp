@@ -1,6 +1,8 @@
+//
+
+use datamodel::{DataModel, Page};
+
 use crate::command::Command;
-use crate::datamodel::DataModel;
-use crate::page::Page;
 
 #[derive(Debug)]
 pub struct CreatePageCommand {
