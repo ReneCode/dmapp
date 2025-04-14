@@ -1,6 +1,6 @@
 use datamodel::DataModel;
 
 pub trait Command: std::fmt::Debug {
-    fn execute(&self, dm: &mut DataModel);
-    fn undo(&self, dm: &mut DataModel);
+    fn execute(&self, data_model: &mut DataModel);
+    fn undo(&self, data_model: &mut DataModel) {}
 }

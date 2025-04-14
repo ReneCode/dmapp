@@ -2,7 +2,7 @@
 
 use wasm_bindgen::prelude::*;
 
-use command::{CommandHandler, CreatePageCommand};
+use command::{CommandHandler, PageCommand};
 use datamodel::DataModel;
 
 #[wasm_bindgen]
@@ -42,7 +42,7 @@ impl EDataModel {
         log(&format!("create page: {}", name));
 
         let id = self.datamodel.next_id();
-        let cmd = CreatePageCommand::new(id, name, "Page Description".to_string());
+        let cmd = PageCommand::new(id, name, "Page Description".to_string());
 
         self.commandhandler
             .execute(&mut self.datamodel, Box::new(cmd));

@@ -29,6 +29,8 @@ name = "command"
 version = "0.1.0"
 dependencies = [
  "datamodel",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

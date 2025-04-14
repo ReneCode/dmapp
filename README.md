@@ -2,4 +2,8 @@
 
 DataModel App
 
-command line based  datamodel written in Rust
+datamodel / webassembly written in Rust
+
+commands inspired by AutoCad
+
+https://www.autodesk.com/shortcuts/autocad

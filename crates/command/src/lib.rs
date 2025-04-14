@@ -2,16 +2,20 @@ pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
 
+mod arccommand;
 mod command;
 mod commandhandler;
-mod createarccommand;
-mod createlinecommand;
-mod createpagecommand;
+mod commandline;
+mod exportcommand;
+mod linecommand;
+mod pagecommand;
 
+pub use arccommand::*;
 pub use commandhandler::*;
-pub use createarccommand::*;
-pub use createlinecommand::*;
-pub use createpagecommand::*;
+pub use commandline::*;
+pub use exportcommand::*;
+pub use linecommand::*;
+pub use pagecommand::*;
 
 #[cfg(test)]
 mod tests {
