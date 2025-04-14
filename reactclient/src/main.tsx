@@ -1,23 +1,22 @@
-import { createContext, StrictMode } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 
-import init, { EDataModel } from "wasm";
-import { DatamodelContext } from "./datamodelContext.ts";
+import init, { ECAPI } from "wasm";
+import { APIContext } from "./APIContext.ts";
 
 init()
   .then(() => {
     console.log("wasm initialized");
 
-    const dataModel = new EDataModel();
-    const dataModelContext = createContext(dataModel);
+    const api = new ECAPI();
 
     createRoot(document.getElementById("root")!).render(
       <StrictMode>
-        <DatamodelContext value={dataModel}>
+        <APIContext value={api}>
           <App />
-        </DatamodelContext>
+        </APIContext>
       </StrictMode>
     );
   })

@@ -2,7 +2,7 @@
 
 use wasm_bindgen::prelude::*;
 
-use command::{CommandHandler, PageCommand};
+use command::{CommandHandler, CommandLine};
 use datamodel::DataModel;
 
 #[wasm_bindgen]
@@ -18,35 +18,45 @@ pub fn greet() {
 }
 
 #[wasm_bindgen]
-pub struct EDataModel {
+pub struct ECAPI {
     // Add fields here if needed
-    datamodel: DataModel,
-    commandhandler: CommandHandler,
+    data_model: DataModel,
+    command_handler: CommandHandler,
+    canvas_id: String,
 }
 
 #[wasm_bindgen]
-impl EDataModel {
+impl ECAPI {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        EDataModel {
-            datamodel: DataModel::default(),
-            commandhandler: CommandHandler::default(),
+        ECAPI {
+            data_model: DataModel::default(),
+            command_handler: CommandHandler::default(),
+            canvas_id: String::new(),
         }
     }
 
-    pub fn get_data(&self) -> String {
-        "Hi DataModel, wasm from Rust!".to_string()
+    #[wasm_bindgen]
+    pub fn init(&mut self, canvas_id: String) {
+        // Initialize the data model or any other necessary components
+        self.canvas_id = canvas_id;
     }
 
-    pub fn create_page(&mut self, name: String) {
-        log(&format!("create page: {}", name));
+    #[wasm_bindgen]
+    pub fn run_command(&mut self, command_line: String) {
+        CommandLine::parse(&mut self.data_model, command_line.as_str())
+            .map(|cmd| {
+                self.command_handler.execute(&mut self.data_model, cmd);
+                log("success");
+            })
+            .unwrap_or_else(|err| {
+                eprintln!("Error: {}", err);
+                log(&format!("Error: {}", err));
+            });
+    }
 
-        let id = self.datamodel.next_id();
-        let cmd = PageCommand::new(id, name, "Page Description".to_string());
-
-        self.commandhandler
-            .execute(&mut self.datamodel, Box::new(cmd));
-        // Here you can set the data in your datamodel
-        // self.datamodel.set_data(data);
+    #[wasm_bindgen]
+    pub fn get_version(&self) -> String {
+        "Hi DataModel, wasm from Rust!".to_string()
     }
 }
