@@ -4,6 +4,7 @@ use wasm_bindgen::prelude::*;
 
 use command::{CommandHandler, CommandLine};
 use datamodel::DataModel;
+use render::render_page;
 
 #[wasm_bindgen]
 extern "C" {
@@ -13,8 +14,8 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn greet() {
-    log("Hello, wasm from Rust!");
+pub fn console_log(s: &str) {
+    log(s);
 }
 
 #[wasm_bindgen]
@@ -40,6 +41,29 @@ impl ECAPI {
     pub fn init(&mut self, canvas_id: String) {
         // Initialize the data model or any other necessary components
         self.canvas_id = canvas_id;
+    }
+
+    #[wasm_bindgen]
+    pub fn render_current_page(&mut self) {
+        // Find the page by ID
+
+        if let Some(page) = self
+            .data_model
+            .get_page(&self.data_model.get_current_page_id())
+        {
+            render_page(&self.data_model, &page, &self.canvas_id);
+        } else {
+            log("Page not found");
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn create_page(&mut self, name: String) -> String {
+        // Create a new page in the data model
+        let id = self.data_model.next_id();
+        let page = datamodel::Page::new(id.clone(), name.clone(), "page description".to_string());
+        self.data_model.insert_page(page);
+        id
     }
 
     #[wasm_bindgen]

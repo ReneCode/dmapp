@@ -20,6 +20,7 @@ default = ["console_error_panic_hook"]
 [dependencies]
 datamodel = { path = "../datamodel" }
 command = { path = "../command" }
+render = { path = "../render" }
 
 
 js-sys = "0.3.77"

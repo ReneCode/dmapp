@@ -16,6 +16,10 @@ impl Command for LineCommand {
     fn execute(&self, dm: &mut DataModel) {
         let line = Line::new(self.id.clone(), self.x1, self.y1, self.x2, self.y2);
         dm.insert_node(Box::new(line));
+        if let Some(page) = dm.get_current_page_mut() {
+            let id = self.id.clone();
+            page.add_node_id(id);
+        }
     }
 
     fn undo(&self, dm: &mut DataModel) {

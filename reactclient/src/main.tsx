@@ -11,6 +11,8 @@ init()
     console.log("wasm initialized");
 
     const api = new ECAPI();
+    let page_id = api?.create_page("new page") ?? "";
+    console.log("created PageId:", page_id);
 
     createRoot(document.getElementById("root")!).render(
       <StrictMode>

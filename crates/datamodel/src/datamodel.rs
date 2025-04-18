@@ -21,6 +21,7 @@ impl IdCounter {
 
 #[derive(Debug, Default)]
 pub struct DataModel {
+    current_page_id: String,
     pages: HashMap<String, Page>,
     nodes: HashMap<String, Box<dyn Node>>,
     // #[serde(skip_serializing)]
@@ -32,6 +33,7 @@ impl DataModel {
     }
 
     pub fn insert_page(&mut self, page: Page) {
+        self.current_page_id = page.get_id().to_string();
         self.pages.insert(page.get_id().to_string(), page);
     }
     pub fn remove_page(&mut self, id: &str) {
@@ -44,6 +46,9 @@ impl DataModel {
     pub fn remove_node(&mut self, id: &str) {
         self.nodes.remove(id);
     }
+    pub fn get_current_page_mut(&mut self) -> Option<&mut Page> {
+        self.pages.get_mut(&self.current_page_id)
+    }
 
     pub fn get_pages(&self) -> Vec<&Page> {
         let result = self.pages.values().collect_vec();
@@ -55,6 +60,22 @@ impl DataModel {
     pub fn get_nodes(&self) -> Vec<&Box<dyn Node>> {
         let result = self.nodes.values().collect_vec();
         result
+    }
+
+    pub fn get_node_ids(&self) -> Vec<String> {
+        let mut result = vec![];
+        for (id, _) in &self.nodes {
+            result.push(id.to_string());
+        }
+        result
+    }
+
+    pub fn get_node(&self, id: &str) -> Option<&Box<dyn Node>> {
+        self.nodes.get(id)
+    }
+
+    pub fn get_current_page_id(&self) -> &str {
+        &self.current_page_id
     }
 }
 

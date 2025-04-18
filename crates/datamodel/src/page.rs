@@ -8,6 +8,7 @@ pub struct Page {
     id: String,
     name: String,
     description: String,
+    node_ids: Vec<String>,
 }
 
 impl Node for Page {
@@ -31,10 +32,19 @@ impl Page {
             id,
             name,
             description: content,
+            node_ids: vec![],
         }
     }
 
     pub fn get_name(&self) -> &str {
         self.name.as_str()
+    }
+
+    pub fn add_node_id(&mut self, node_id: String) {
+        self.node_ids.push(node_id);
+    }
+
+    pub fn get_node_ids(&self) -> &Vec<String> {
+        &self.node_ids
     }
 }

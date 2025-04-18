@@ -122,6 +122,13 @@ dependencies = [
 [[package]]
 name = "render"
 version = "0.1.0"
+dependencies = [
+ "console_error_panic_hook",
+ "datamodel",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
+]
 
 [[package]]
 name = "rustversion"
@@ -192,6 +199,7 @@ dependencies = [
  "console_error_panic_hook",
  "datamodel",
  "js-sys",
+ "render",
  "wasm-bindgen",
  "web-sys",
 ]

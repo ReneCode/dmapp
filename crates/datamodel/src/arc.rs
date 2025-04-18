@@ -25,6 +25,7 @@ impl Node for Arc {
         self
     }
 }
+
 impl Arc {
     pub fn new(id: String, x: f64, y: f64, r: f64, angle_start: f64, angle_end: f64) -> Self {
         Arc {

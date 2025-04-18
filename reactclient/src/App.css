@@ -13,9 +13,17 @@ body {
 }
 
 .commandline {
+  position: absolute;
+  bottom: 40px;
+  left: 10px;
   margin: 20px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: start;
+  width: 90%;
+}
+
+canvas {
+  border: 1px solid black;
+  background-color: beige;
+  margin: 20px;
+  width: 500px;
+  height: 400px;
 }
