@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+import "./CommandLine.css";
+
 interface CommandLineProps {
   onChanged: (input: string) => void;
 }
@@ -15,14 +17,16 @@ const CommandLine: React.FC<CommandLineProps> = ({ onChanged }) => {
   };
 
   return (
-    <input
-      style={{ width: "100%", padding: "10px", fontSize: "16px" }}
-      type="text"
-      value={input}
-      onChange={(e) => setInput(e.target.value)}
-      onKeyDown={handleKeyPress}
-      placeholder="Type a command and press Enter..."
-    />
+    <div className="commandline">
+      <input
+        className="command-input"
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyPress}
+        placeholder="Type a command and press Enter..."
+      />
+    </div>
   );
 };
 

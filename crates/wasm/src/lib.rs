@@ -30,11 +30,13 @@ pub struct ECAPI {
 impl ECAPI {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        ECAPI {
+        let ecapi = ECAPI {
             data_model: DataModel::default(),
             command_handler: CommandHandler::default(),
             canvas_id: String::new(),
-        }
+        };
+        log("WASM ECAPI initialized");
+        ecapi
     }
 
     #[wasm_bindgen]
@@ -71,7 +73,6 @@ impl ECAPI {
         CommandLine::parse(&mut self.data_model, command_line.as_str())
             .map(|cmd| {
                 self.command_handler.execute(&mut self.data_model, cmd);
-                log("success");
             })
             .unwrap_or_else(|err| {
                 eprintln!("Error: {}", err);

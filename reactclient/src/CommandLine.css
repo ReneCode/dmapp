@@ -1,0 +1,13 @@
+.commandline {
+  position: absolute;
+  bottom: 40px;
+  left: 10px;
+  width: calc(100% - 20px);
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.command-input {
+  flex-grow: 1;
+}

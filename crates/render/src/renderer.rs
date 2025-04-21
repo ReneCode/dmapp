@@ -5,6 +5,8 @@ use web_sys::{Document, Element, SvgElement, Window};
 
 use datamodel::{Arc, DataModel, Line, Node, Page};
 
+use crate::transform::Transform;
+
 #[wasm_bindgen]
 extern "C" {
 
@@ -31,14 +33,6 @@ impl Graphic for Line {
         document: &mut Document,
         svg_parent: &Element,
     ) -> Result<web_sys::Node, JsValue> {
-        log(&format!(
-            "x1: {}, y1: {}, x2: {}, y2: {}",
-            self.get_x1(),
-            self.get_y1(),
-            self.get_x2(),
-            self.get_y2()
-        ));
-
         let svg_line = document.create_element_ns(Some("http://www.w3.org/2000/svg"), "line")?;
 
         svg_line.set_attribute("id", self.get_id())?;
@@ -48,7 +42,7 @@ impl Graphic for Line {
         svg_line.set_attribute("y2", &round(self.get_y2()))?;
 
         svg_line.set_attribute("stroke", &"black")?;
-        svg_line.set_attribute("stroke-width", &round(3.0))?;
+        svg_line.set_attribute("stroke-width", &round(1.0))?;
 
         svg_parent.append_child(&svg_line)
     }
@@ -88,17 +82,39 @@ fn render_nodes(
     let svg_canvas: SvgElement = get_svg_element(&document, canvas_id);
     svg_canvas.set_inner_html(""); // Clear the canvas
 
-    log(&format!(
-        "canvas_id: {}, node_ids: {:?}",
-        canvas_id, node_ids
-    ));
+    let svg_group: Element = document.create_element_ns(Some("http://www.w3.org/2000/svg"), "g")?;
+
+    svg_group.set_attribute("id", "root_group")?;
+
+    let transform = Transform {
+        a: 1.0,
+        b: 0.0,
+        c: 0.0,
+        d: 1.0,
+        dx: 40.0,
+        dy: 80.0,
+    };
+
+    let matrix = format!(
+        "matrix({},{},{},{},{},{})",
+        &round(transform.a),
+        &round(transform.b),
+        &round(transform.c),
+        &round(transform.d),
+        &round(transform.dx),
+        &round(transform.dy)
+    );
+    svg_group.set_attribute("transform", &matrix)?;
+
+    // svg_group.set_attribute("transform", "transform(matrix(1,0,0,1,40,80))")?;
+    svg_canvas.append_child(&svg_group)?;
+
     for id in node_ids {
-        log(&format!("rendering node {}", id));
         if let Some(node) = data_model.get_node(id) {
             if let Some(line) = node.as_any().downcast_ref::<Line>() {
-                line.render(&mut document, &svg_canvas)?;
+                line.render(&mut document, &svg_group)?;
             } else if let Some(arc) = node.as_any().downcast_ref::<Arc>() {
-                arc.render(&mut document, &svg_canvas)?;
+                arc.render(&mut document, &svg_group)?;
             }
         }
     }
