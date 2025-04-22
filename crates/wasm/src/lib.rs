@@ -6,6 +6,9 @@ use command::{CommandHandler, CommandLine};
 use datamodel::DataModel;
 use render::render_page;
 
+mod viewport;
+use viewport::Viewport;
+
 #[wasm_bindgen]
 extern "C" {
 
@@ -23,7 +26,7 @@ pub struct ECAPI {
     // Add fields here if needed
     data_model: DataModel,
     command_handler: CommandHandler,
-    canvas_id: String,
+    viewport: Viewport,
 }
 
 #[wasm_bindgen]
@@ -33,7 +36,7 @@ impl ECAPI {
         let ecapi = ECAPI {
             data_model: DataModel::default(),
             command_handler: CommandHandler::default(),
-            canvas_id: String::new(),
+            viewport: Viewport::new(),
         };
         log("WASM ECAPI initialized");
         ecapi
@@ -42,7 +45,7 @@ impl ECAPI {
     #[wasm_bindgen]
     pub fn init(&mut self, canvas_id: String) {
         // Initialize the data model or any other necessary components
-        self.canvas_id = canvas_id;
+        self.viewport.set_canvas_id(canvas_id);
     }
 
     #[wasm_bindgen]
@@ -53,10 +56,17 @@ impl ECAPI {
             .data_model
             .get_page(&self.data_model.get_current_page_id())
         {
-            render_page(&self.data_model, &page, &self.canvas_id);
+            render_page(&self.data_model, &page, &self.viewport.get_canvas_id());
         } else {
             log("Page not found");
         }
+    }
+
+    #[wasm_bindgen]
+    pub fn resize_canvas(&mut self, width: f64, height: f64) {
+        log(format!("Resizing canvas to {}x{}", width, height).as_str());
+        // Set the viewport dimensions
+        self.viewport.set_canvas_size(width, height);
     }
 
     #[wasm_bindgen]

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-const useWindowDimensions = () => {
+const useWindowDimensions = (callback: (w: number, h: number) => void) => {
   const [windowDimensions, setWindowDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -12,7 +12,11 @@ const useWindowDimensions = () => {
         width: window.innerWidth,
         height: window.innerHeight,
       });
+      callback(window.innerWidth, window.innerHeight);
     };
+    // Set initial dimensions
+    callback(window.innerWidth, window.innerHeight);
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);

@@ -8,8 +8,9 @@ import "./Editor.css";
 export const Editor = () => {
   const svgRef = useRef<SVGSVGElement>(null);
   const api = useContext(APIContext);
-  const { width, height } = useWindowDimensions();
-  console.log("API Context in Editor:", width, height);
+  const { width, height } = useWindowDimensions((width, height) => {
+    api?.resize_canvas(width, height);
+  });
 
   useEffect(() => {
     if (svgRef.current) {
