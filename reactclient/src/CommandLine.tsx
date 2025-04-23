@@ -19,6 +19,7 @@ const CommandLine: React.FC<CommandLineProps> = ({ onChanged }) => {
   return (
     <div className="commandline">
       <input
+        autoFocus
         className="command-input"
         type="text"
         value={input}

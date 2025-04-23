@@ -2,7 +2,7 @@
 
 use crate::point2d::Point2D;
 
-struct Matrix {
+pub struct Matrix {
     a: f64,
     b: f64,
     c: f64,
@@ -29,14 +29,14 @@ impl Matrix {
         }
     }
 
-    fn identity() -> Self {
+    pub fn identity() -> Self {
         Self::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
     }
 
-    fn translate(tx: f64, ty: f64) -> Self {
+    pub fn translate(tx: f64, ty: f64) -> Self {
         Self::new(1.0, 0.0, tx, 0.0, 1.0, ty, 0.0, 0.0, 1.0)
     }
-    fn scale(sx: f64, sy: f64) -> Self {
+    pub fn scale(sx: f64, sy: f64) -> Self {
         Self::new(sx, 0.0, 0.0, 0.0, sy, 0.0, 0.0, 0.0, 1.0)
     }
     fn rotate(theta: f64) -> Self {
@@ -47,13 +47,13 @@ impl Matrix {
         )
     }
 
-    fn multiply(&self, point: &Point2D) -> Point2D {
+    pub fn multiply(&self, point: &Point2D) -> Point2D {
         let x = self.a * point.x + self.b * point.y + self.c;
         let y = self.d * point.x + self.e * point.y + self.f;
         Point2D::new(x / (self.g * point.x + self.h * point.y + self.i), y)
     }
 
-    fn inverse(&self) -> Option<Self> {
+    pub fn inverse(&self) -> Option<Self> {
         let det = self.a * (self.e * self.i - self.f * self.h)
             - self.b * (self.d * self.i - self.f * self.g)
             + self.c * (self.d * self.h - self.e * self.g);

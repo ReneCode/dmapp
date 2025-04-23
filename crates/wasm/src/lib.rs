@@ -1,13 +1,11 @@
 //
 
+use algebra::Viewport;
 use wasm_bindgen::prelude::*;
 
 use command::{CommandHandler, CommandLine};
 use datamodel::DataModel;
-use render::render_page;
-
-mod viewport;
-use viewport::Viewport;
+use render::Renderer;
 
 #[wasm_bindgen]
 extern "C" {
@@ -56,7 +54,9 @@ impl ECAPI {
             .data_model
             .get_page(&self.data_model.get_current_page_id())
         {
-            render_page(&self.data_model, &page, &self.viewport.get_canvas_id());
+            let renderer = Renderer::new(&self.data_model, &self.viewport);
+            renderer.render_page(&page);
+            log(format!("Rendering page: {}", page.get_name()).as_str());
         } else {
             log("Page not found");
         }
