@@ -4,13 +4,16 @@ import { APIContext } from "./APIContext";
 import useWindowDimensions from "./hook/useWindowSize";
 
 import "./Editor.css";
+import { useMiddleMousePanning } from "./hook/useMiddleMousePanning";
 
 export const Editor = () => {
   const svgRef = useRef<SVGSVGElement>(null);
+
   const api = useContext(APIContext);
   const { width, height } = useWindowDimensions((width, height) => {
     api?.resize_canvas(width, height);
   });
+  const { panningStart, panningMove, panningStop } = useMiddleMousePanning();
 
   useEffect(() => {
     if (svgRef.current) {
@@ -38,25 +41,28 @@ export const Editor = () => {
     }
   };
 
-  const onPanning = (event: WheelEvent) => {
+  const onMouseDown = (event: React.MouseEvent<SVGSVGElement>) => {
     event.preventDefault();
-    event.stopPropagation();
-    const svg = svgRef.current;
-    if (svg) {
-      const viewBox = svg.viewBox.baseVal;
-      const deltaX = event.deltaX * 0.1;
-      const deltaY = event.deltaY * 0.1;
-      viewBox.x += deltaX;
-      viewBox.y += deltaY;
-      svg.setAttribute(
-        "viewBox",
-        `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`
-      );
+    if (event.buttons === 4) {
+      panningStart(event);
+    } else {
+      // api?.mouse_down(event.clientX, event.clientY);
     }
   };
 
-  const onMouseDown = (event: React.MouseEvent<SVGSVGElement>) => {
+  const onMouseUp = (event: React.MouseEvent<SVGSVGElement>) => {
     event.preventDefault();
+    if (event.buttons === 4) {
+      panningStop();
+    }
+    // api?.mouse_up(event.clientX, event.clientY);
+  };
+  const onMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+    event.preventDefault();
+    if (event.buttons === 4) {
+      panningMove(event);
+    }
+    // api?.mouse_move(event.clientX, event.clientY);
   };
 
   return (
@@ -67,10 +73,9 @@ export const Editor = () => {
       xmlns="http://www.w3.org/2000/svg"
       width={`${width}`}
       height={`${height}`}
-      // viewBox={`${viewport.current.x} ${viewport.current.y} ${viewport.current.width} ${viewport.current.height}`}
-      // viewBox={`0 0 100 100`}
-      // onWheel={onWheel}
-      // onMouseDown={onmousedown}
+      onMouseDown={onMouseDown}
+      onMouseUp={onMouseUp}
+      onMouseMove={onMouseMove}
     ></svg>
   );
 };
