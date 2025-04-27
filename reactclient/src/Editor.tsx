@@ -2,20 +2,14 @@ import { useContext, useEffect, useRef } from "react";
 
 import { APIContext } from "./APIContext";
 import useWindowDimensions from "./hook/useWindowSize";
-import { Viewport } from "./Viewport";
 
 import "./Editor.css";
 
 export const Editor = () => {
   const svgRef = useRef<SVGSVGElement>(null);
-
-  // const viewport = useRef<Viewport>(new Viewport());
-
   const api = useContext(APIContext);
   const { width, height } = useWindowDimensions((width, height) => {
     api?.resize_canvas(width, height);
-    // viewport.current.canvas_width = width;
-    // viewport.current.canvas_height = height;
   });
 
   useEffect(() => {
@@ -44,23 +38,6 @@ export const Editor = () => {
     } else {
       // onPanning(event);
       console.log("onPanning");
-    }
-  };
-
-  const onZoom = (event: WheelEvent) => {
-    const delta = event.deltaY;
-    const zoomFactor = 0.01;
-    const scale = Math.exp(delta * zoomFactor);
-    const svg = svgRef.current;
-    if (svg) {
-      const viewBox = svg.viewBox.baseVal;
-      const newWidth = viewBox.width * scale;
-      const newHeight = viewBox.height * scale;
-      const newX = viewBox.x + (viewBox.width - newWidth) / 2;
-      const newY = viewBox.y + (viewBox.height - newHeight) / 2;
-      svg.setAttribute("viewBox", `${newX} ${newY} ${newWidth} ${newHeight}`);
-      // svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-      // svg.setAttribute("style", "overflow: visible;");
     }
   };
 

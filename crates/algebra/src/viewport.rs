@@ -44,6 +44,11 @@ impl Viewport {
     pub fn set_canvas_size(&mut self, width: f64, height: f64) {
         self.canvas_width = width;
         self.canvas_height = height;
+        self.x = -width / 2.0;
+        self.y = -height / 2.0;
+        self.width = width;
+        self.height = height;
+        self.scale = 1.0;
     }
 
     // fix width or height if the ratio does not fit to the ratio of the canvas
@@ -79,39 +84,18 @@ impl Viewport {
         let old_scale = self.scale;
         let new_scale = old_scale * (1.0 + delta / 100.0);
 
-        // zoom to the center of the viewport
-        let center_x = self.canvas_width / 2.0;
-        let center_y = self.canvas_height / 2.0;
-
-        self.scale = new_scale;
-
-        // let canvas_ratio = self.canvas_width / self.canvas_height;
-        self.width = round(self.canvas_width / new_scale);
-        self.height = round(self.canvas_height / new_scale);
-
-        return;
-
         let x = self.x + center_x / self.scale;
         let y = self.y + center_y / self.scale;
 
         let new_x = x - (old_scale / new_scale) * (x - self.x);
         let new_y = y - (old_scale / new_scale) * (y - self.y);
 
-        self.x = round(new_x);
-        self.y = round(new_y);
-        self.scale = round(new_scale);
-        self.width = round(self.canvas_width / new_scale);
-        self.height = round(self.canvas_height / new_scale);
+        self.x = new_x;
+        self.y = new_y;
+        self.scale = new_scale;
+        self.width = self.canvas_width / new_scale;
+        self.height = self.canvas_height / new_scale;
     }
-
-    // pub fn wc_to_canvas(&self, point: &Point2D) -> Point2D {
-    //     // Convert a point from world coordinates to canvas coordinates
-    //     self.wc_to_canvas.multiply(point)
-    // }
-    // pub fn canvas_to_wc(&self, point: &Point2D) -> Point2D {
-    //     // Convert a point from canvas coordinates to world coordinates
-    //     self.canvas_to_wc.multiply(point)
-    // }
 
     // ------------------------
 }
