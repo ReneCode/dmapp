@@ -165,10 +165,10 @@ mod tests {
 
         viewport.zoom_viewport(1.0, 400.0, 200.0);
 
-        assert_eq!(viewport.scale, 0.99);
-        assert_eq!(viewport.x, 0.0);
-        assert_eq!(viewport.y, 0.0);
-        assert_eq!(viewport.width, 808.08);
-        assert_eq!(viewport.height, 404.04);
+        assert_eq!(round(viewport.scale), 0.99);
+        assert_eq!(round(viewport.x), -4.04);
+        assert_eq!(round(viewport.y), -2.02);
+        assert_eq!(round(viewport.width), 808.08);
+        assert_eq!(round(viewport.height), 404.04);
     }
 }
