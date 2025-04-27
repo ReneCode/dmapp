@@ -2,21 +2,88 @@ import { useContext, useEffect, useRef } from "react";
 
 import { APIContext } from "./APIContext";
 import useWindowDimensions from "./hook/useWindowSize";
+import { Viewport } from "./Viewport";
 
 import "./Editor.css";
 
 export const Editor = () => {
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // const viewport = useRef<Viewport>(new Viewport());
+
   const api = useContext(APIContext);
   const { width, height } = useWindowDimensions((width, height) => {
     api?.resize_canvas(width, height);
+    // viewport.current.canvas_width = width;
+    // viewport.current.canvas_height = height;
   });
 
   useEffect(() => {
     if (svgRef.current) {
       api?.init(svgRef.current.id);
     }
+
+    const svgRoot = svgRef.current;
+    if (svgRoot) {
+      svgRoot.addEventListener("wheel", onWheel, { passive: false });
+    }
+
+    return () => {
+      if (svgRoot) {
+        svgRoot.removeEventListener("wheel", onWheel);
+      }
+    };
   }, []);
+
+  const onWheel = (event: WheelEvent) => {
+    if (event.metaKey || event.ctrlKey) {
+      // onZoom(event);
+      event.preventDefault();
+
+      api?.zoom_viewport(event.deltaY, event.clientX, event.clientY);
+    } else {
+      // onPanning(event);
+      console.log("onPanning");
+    }
+  };
+
+  const onZoom = (event: WheelEvent) => {
+    const delta = event.deltaY;
+    const zoomFactor = 0.01;
+    const scale = Math.exp(delta * zoomFactor);
+    const svg = svgRef.current;
+    if (svg) {
+      const viewBox = svg.viewBox.baseVal;
+      const newWidth = viewBox.width * scale;
+      const newHeight = viewBox.height * scale;
+      const newX = viewBox.x + (viewBox.width - newWidth) / 2;
+      const newY = viewBox.y + (viewBox.height - newHeight) / 2;
+      svg.setAttribute("viewBox", `${newX} ${newY} ${newWidth} ${newHeight}`);
+      // svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      // svg.setAttribute("style", "overflow: visible;");
+    }
+  };
+
+  const onPanning = (event: WheelEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const svg = svgRef.current;
+    if (svg) {
+      const viewBox = svg.viewBox.baseVal;
+      const deltaX = event.deltaX * 0.1;
+      const deltaY = event.deltaY * 0.1;
+      viewBox.x += deltaX;
+      viewBox.y += deltaY;
+      svg.setAttribute(
+        "viewBox",
+        `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`
+      );
+    }
+  };
+
+  const onMouseDown = (event: React.MouseEvent<SVGSVGElement>) => {
+    event.preventDefault();
+  };
 
   return (
     <svg
@@ -24,9 +91,12 @@ export const Editor = () => {
       className="canvas"
       id="svgroot"
       xmlns="http://www.w3.org/2000/svg"
-      width={`${width}px`}
-      height={`${height}px`}
-      viewBox={`0 0 ${width} ${height}`}
+      width={`${width}`}
+      height={`${height}`}
+      // viewBox={`${viewport.current.x} ${viewport.current.y} ${viewport.current.width} ${viewport.current.height}`}
+      // viewBox={`0 0 100 100`}
+      // onWheel={onWheel}
+      // onMouseDown={onmousedown}
     ></svg>
   );
 };

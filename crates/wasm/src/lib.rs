@@ -62,6 +62,16 @@ impl ECAPI {
         }
     }
 
+    pub fn zoom_viewport(&mut self, delta_y: f64, center_x: f64, center_y: f64) {
+        // Zoom the viewport based on the mouse wheel event
+        self.viewport.zoom_viewport(delta_y, center_x, center_y);
+
+        log(format!("{:?}", self.viewport).as_str());
+
+        self.render_current_page();
+        log(format!("Zooming viewport: {} {} {}", delta_y, center_x, center_y).as_str());
+    }
+
     #[wasm_bindgen]
     pub fn resize_canvas(&mut self, width: f64, height: f64) {
         log(format!("Resizing canvas to {}x{}", width, height).as_str());

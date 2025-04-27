@@ -6,7 +6,7 @@ use web_sys::{Document, Element, SvgElement, Window};
 
 use datamodel::{Arc, DataModel, Line, Node, Page};
 
-use crate::transform::Transform;
+use crate::transform::{self, Transform};
 
 #[wasm_bindgen]
 extern "C" {
@@ -59,7 +59,7 @@ impl Graphic for Arc {
 pub struct Renderer<'a> {
     data_model: &'a DataModel,
     viewport: &'a Viewport,
-    window: Window,
+    // window: Window,
     document: Document,
 }
 
@@ -71,13 +71,13 @@ impl<'a> Renderer<'a> {
         Self {
             data_model,
             viewport,
-            window,
+            // window,
             document,
         }
     }
 
     pub fn render_page(&self, page: &Page) -> Result<(), JsValue> {
-        let svg_canvas: SvgElement = self.get_svg_element();
+        let svg_canvas: SvgElement = self.get_svg_element()?;
         svg_canvas.set_inner_html(""); // Clear the canvas
 
         let root_group = self.create_root_group()?;
@@ -90,7 +90,7 @@ impl<'a> Renderer<'a> {
 
     // ----------------------
 
-    fn get_svg_element(&self) -> SvgElement {
+    fn get_svg_element(&self) -> Result<SvgElement, JsValue> {
         let svg_canvas: SvgElement = self
             .document
             .get_element_by_id(self.viewport.get_canvas_id())
@@ -99,7 +99,14 @@ impl<'a> Renderer<'a> {
             .map_err(|_| ())
             .expect("The element with your_svg_id is not an SVGElement");
 
-        svg_canvas
+        let viewport = format!(
+            "{} {} {} {}",
+            self.viewport.x, self.viewport.y, self.viewport.width, self.viewport.height,
+        );
+
+        svg_canvas.set_attribute("viewBox", &viewport)?;
+
+        Ok(svg_canvas)
     }
 
     fn create_root_group(&self) -> Result<SvgElement, JsValue> {
@@ -112,28 +119,13 @@ impl<'a> Renderer<'a> {
             .expect("The element with your_svg_id is not an SVGElement");
 
         svg_group.set_attribute("id", "root_group")?;
-        let transform = Transform {
-            a: 1.0,
-            b: 0.0,
-            c: 0.0,
-            d: 1.0,
-            dx: 40.0,
-            dy: 80.0,
-        };
-        let matrix = format!(
-            "matrix({},{},{},{},{},{})",
-            &round(transform.a),
-            &round(transform.b),
-            &round(transform.c),
-            &round(transform.d),
-            &round(transform.dx),
-            &round(transform.dy)
-        );
-        svg_group.set_attribute("transform", &matrix)?;
+
+        // let transform = self.viewport.get_svg_transform_matrix();
+        svg_group.set_attribute("transform", "scale(1,-1)")?;
 
         Ok(svg_group)
 
-        // // svg_group.set_attribute("transform", "transform(matrix(1,0,0,1,40,80))")?;
+        // svg_group.set_attribute("transform", "transform(matrix(1,0,0,1,40,80))")?;
         // svg_canvas.append_child(&svg_group)?;
 
         // render_page(page, canvas_id)

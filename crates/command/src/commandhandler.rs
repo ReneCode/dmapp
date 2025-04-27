@@ -19,6 +19,7 @@ impl CommandHandler {
         cmd.execute(dm);
         self.undo_stack.push(cmd);
     }
+
     pub fn undo(&mut self, dm: &mut DataModel) {
         if let Some(cmd) = self.undo_stack.pop() {
             cmd.undo(dm);
@@ -26,6 +27,7 @@ impl CommandHandler {
             println!("No commands to undo");
         }
     }
+
     pub fn list_commands(&self) {
         for cmd in &self.undo_stack {
             println!("{:?}", cmd);
