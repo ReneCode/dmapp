@@ -30,14 +30,11 @@ export const Editor = () => {
   }, []);
 
   const onWheel = (event: WheelEvent) => {
+    event.preventDefault();
     if (event.metaKey || event.ctrlKey) {
-      // onZoom(event);
-      event.preventDefault();
-
       api?.zoom_viewport(event.deltaY, event.clientX, event.clientY);
     } else {
-      // onPanning(event);
-      console.log("onPanning");
+      api?.panning_viewport(event.deltaX, event.deltaY);
     }
   };
 

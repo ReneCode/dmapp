@@ -56,7 +56,6 @@ impl ECAPI {
         {
             let renderer = Renderer::new(&self.data_model, &self.viewport);
             renderer.render_page(&page);
-            log(format!("Rendering page: {}", page.get_name()).as_str());
         } else {
             log("Page not found");
         }
@@ -66,15 +65,18 @@ impl ECAPI {
         // Zoom the viewport based on the mouse wheel event
         self.viewport.zoom_viewport(delta_y, center_x, center_y);
 
-        log(format!("{:?}", self.viewport).as_str());
+        self.render_current_page();
+    }
+
+    pub fn panning_viewport(&mut self, delta_x: f64, delta_y: f64) {
+        // Pan the viewport based on mouse movement
+        self.viewport.panning_viewport(delta_x, delta_y);
 
         self.render_current_page();
-        log(format!("Zooming viewport: {} {} {}", delta_y, center_x, center_y).as_str());
     }
 
     #[wasm_bindgen]
     pub fn resize_canvas(&mut self, width: f64, height: f64) {
-        log(format!("Resizing canvas to {}x{}", width, height).as_str());
         // Set the viewport dimensions
         self.viewport.set_canvas_size(width, height);
     }

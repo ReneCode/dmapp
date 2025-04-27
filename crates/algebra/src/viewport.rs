@@ -97,6 +97,10 @@ impl Viewport {
         self.height = self.canvas_height / new_scale;
     }
 
+    pub fn panning_viewport(&mut self, delta_x: f64, delta_y: f64) {
+        self.x = round(self.x + delta_x / self.scale);
+        self.y = round(self.y + delta_y / self.scale);
+    }
     // ------------------------
 }
 
