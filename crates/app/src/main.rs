@@ -32,27 +32,6 @@ fn execute_list(
                 eprintln!("Error: Page with ID {} not found", id);
             }
         }
-        "lines" => {
-            for node in dm.get_nodes() {
-                match node.get_node_type() {
-                    NodeType::Line => {
-                        if let Some(line) = node.as_any().downcast_ref::<Line>() {
-                            println!(
-                                "Line ID: {}, Coordinates: ({}, {}), ({}, {})",
-                                line.get_id(),
-                                line.get_x1(),
-                                line.get_y1(),
-                                line.get_x2(),
-                                line.get_y2()
-                            );
-                        }
-                    }
-                    _ => {
-                        eprintln!("Error: unhandled node type {}", node.get_node_type());
-                    }
-                }
-            }
-        }
 
         _ => {
             eprintln!("Error: Unknown node type: {}", node_type);

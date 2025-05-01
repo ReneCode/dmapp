@@ -9,6 +9,9 @@ pub struct Page {
     name: String,
     description: String,
     node_ids: Vec<String>,
+
+    // #[serde(skip_serializing)]
+    selected_ids: Vec<String>,
 }
 
 impl Node for Page {
@@ -33,6 +36,7 @@ impl Page {
             name,
             description: content,
             node_ids: vec![],
+            selected_ids: vec![],
         }
     }
 
@@ -46,5 +50,13 @@ impl Page {
 
     pub fn get_node_ids(&self) -> &Vec<String> {
         &self.node_ids
+    }
+
+    pub fn set_selected_ids(&mut self, node_ids: Vec<String>) {
+        self.selected_ids = node_ids;
+    }
+
+    pub fn get_selected_ids(&self) -> &Vec<String> {
+        &self.selected_ids
     }
 }

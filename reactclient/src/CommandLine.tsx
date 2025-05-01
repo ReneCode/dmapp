@@ -1,18 +1,24 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 
 import "./CommandLine.css";
+import { EditorContext } from "./EditorContext";
 
 interface CommandLineProps {
   onChanged: (input: string) => void;
 }
 
 const CommandLine: React.FC<CommandLineProps> = ({ onChanged }) => {
+  const editor = useContext(EditorContext);
   const [input, setInput] = useState("");
 
   const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       onChanged(input);
       setInput(""); // Clear the input field after calling the handler
+      editor.dispatchEvent({
+        type: "command",
+        command: input,
+      });
     }
   };
 

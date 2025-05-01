@@ -1,23 +1,27 @@
 import { useContext, useEffect, useRef } from "react";
 
 import { APIContext } from "./APIContext";
+import { EditorContext } from "./EditorContext";
+
 import useWindowDimensions from "./hook/useWindowSize";
 
-import "./Editor.css";
+import "./Canvas.css";
 import { useMiddleMousePanning } from "./hook/useMiddleMousePanning";
 
-export const Editor = () => {
+export const Canvas = () => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   const api = useContext(APIContext);
+  const editor = useContext(EditorContext);
+
   const { width, height } = useWindowDimensions((width, height) => {
-    api?.resize_canvas(width, height);
+    api.resize_canvas(width, height);
   });
   const { panningStart, panningMove, panningStop } = useMiddleMousePanning();
 
   useEffect(() => {
     if (svgRef.current) {
-      api?.init(svgRef.current.id);
+      api.init(svgRef.current.id);
     }
 
     const svgRoot = svgRef.current;
@@ -35,9 +39,9 @@ export const Editor = () => {
   const onWheel = (event: WheelEvent) => {
     event.preventDefault();
     if (event.metaKey || event.ctrlKey) {
-      api?.zoom_viewport(event.deltaY, event.clientX, event.clientY);
+      api.zoom_viewport(event.deltaY, event.clientX, event.clientY);
     } else {
-      api?.panning_viewport(event.deltaX, event.deltaY);
+      api.panning_viewport(event.deltaX, event.deltaY);
     }
   };
 
@@ -46,6 +50,18 @@ export const Editor = () => {
     if (event.buttons === 4) {
       panningStart(event);
     } else {
+      editor.dispatchEvent({
+        type: "mouse_down",
+        clientX: event.clientX,
+        clientY: event.clientY,
+      });
+
+      api.do_callback1((e: any) => {
+        // console.log(">>", e);
+      });
+      // throw new Error("Mouse down event not implemented");
+      let a = 1.0 / 0;
+      return a;
       // api?.mouse_down(event.clientX, event.clientY);
     }
   };

@@ -46,6 +46,10 @@ impl DataModel {
     pub fn remove_node(&mut self, id: &str) {
         self.nodes.remove(id);
     }
+
+    pub fn get_current_page(&self) -> Option<&Page> {
+        self.pages.get(&self.current_page_id)
+    }
     pub fn get_current_page_mut(&mut self) -> Option<&mut Page> {
         self.pages.get_mut(&self.current_page_id)
     }
@@ -56,18 +60,6 @@ impl DataModel {
     }
     pub fn get_page(&self, id: &str) -> Option<&Page> {
         self.pages.get(id)
-    }
-    pub fn get_nodes(&self) -> Vec<&Box<dyn Node>> {
-        let result = self.nodes.values().collect_vec();
-        result
-    }
-
-    pub fn get_node_ids(&self) -> Vec<String> {
-        let mut result = vec![];
-        for (id, _) in &self.nodes {
-            result.push(id.to_string());
-        }
-        result
     }
 
     pub fn get_node(&self, id: &str) -> Option<&Box<dyn Node>> {

@@ -3,16 +3,14 @@ import "./App.css";
 import { APIContext } from "./APIContext";
 import { useContext } from "react";
 import CommandLine from "./CommandLine";
-import { Editor } from "./Editor";
 import { Statusbar } from "./Statusbar";
+import { Canvas } from "./Canvas";
 
 function App() {
   const api = useContext(APIContext);
 
   const onCommandEntered = (command: string) => {
     // console.log("Command entered:", command);
-
-    api?.init("svgroot");
 
     api?.run_command(command);
     api?.render_current_page();
@@ -23,7 +21,7 @@ function App() {
 
   return (
     <>
-      <Editor></Editor>
+      <Canvas></Canvas>
 
       <Statusbar></Statusbar>
       <div className="commandline">
