@@ -23,6 +23,10 @@ command = { path = "../command" }
 render = { path = "../render" }
 algebra= { path = "../algebra" }
 
+serde = { version = "1.0", features = ["derive"] }
+serde-wasm-bindgen = "0.4"
+
+gloo-utils = { version = "0.1", features = ["serde"] }
 
 js-sys = "0.3.77"
 wasm-bindgen = "0.2"

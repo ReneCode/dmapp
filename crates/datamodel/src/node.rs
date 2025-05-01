@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
@@ -38,7 +39,8 @@ impl From<&str> for NodeType {
 pub trait Node: std::fmt::Debug {
     fn get_id(&self) -> &str;
     fn get_node_type(&self) -> &NodeType;
-    fn as_any(&self) -> &dyn std::any::Any;
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 // Implement Serialize for dyn Node to allow serialization of concrete types

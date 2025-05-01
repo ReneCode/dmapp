@@ -1,3 +1,5 @@
+//
+
 use serde::{Deserialize, Serialize};
 
 use crate::node::{Node, NodeType};
@@ -6,10 +8,10 @@ use crate::node::{Node, NodeType};
 pub struct Line {
     node_type: NodeType,
     id: String,
-    x1: f64,
-    y1: f64,
-    x2: f64,
-    y2: f64,
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
 }
 
 impl Node for Line {
@@ -24,17 +26,20 @@ impl Node for Line {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
 }
 
 impl Line {
-    pub fn new(id: String, x1: f64, y1: f64, x2: f64, y2: f64) -> Self {
+    pub fn new(id: String) -> Self {
         Line {
             node_type: NodeType::Line,
             id,
-            x1,
-            y1,
-            x2,
-            y2,
+            x1: 0.0,
+            y1: 0.0,
+            x2: 50.0,
+            y2: 50.0,
         }
     }
     pub fn get_x1(&self) -> f64 {

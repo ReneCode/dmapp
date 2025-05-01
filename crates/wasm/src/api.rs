@@ -1,11 +1,20 @@
+use gloo_utils::format::JsValueSerdeExt;
+use serde::{Deserialize, Serialize};
 //
 
 use algebra::{Point2D, Viewport};
+use datamodel::{Line, Node};
 use wasm_bindgen::prelude::*;
 
 use command::{CommandHandler, CommandLine};
 use datamodel::DataModel;
 use render::Renderer;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct BaseNode {
+    id: String,
+    node_type: String,
+}
 
 #[wasm_bindgen]
 struct Point2DWrapper {
@@ -134,6 +143,59 @@ impl ECAPI {
         let page = datamodel::Page::new(id.clone(), name.clone(), "page description".to_string());
         self.data_model.insert_page(page);
         id
+    }
+
+    #[wasm_bindgen]
+    pub fn create_line(&mut self) -> Result<JsValue, JsValue> {
+        // Create a new line in the data model
+        // and add it to the current page
+        if let None = self.data_model.get_current_page() {
+            log("No current page found");
+            return Err(JsValue::from_str("No current page found"));
+        }
+
+        let id = self.data_model.next_id();
+        let line = datamodel::Line::new(id.clone());
+
+        let a = JsValue::from_serde(&line).unwrap();
+
+        let result = serde_wasm_bindgen::to_value(&line)?;
+
+        self.data_model.insert_node(Box::new(line));
+        if let Some(page) = self.data_model.get_current_page_mut() {
+            page.add_node_id(id.clone());
+        } else {
+            log("No page found");
+        }
+
+        Ok(result)
+    }
+
+    pub fn patch_node(&mut self, patch: JsValue) -> Result<JsValue, JsValue> {
+        let base_node = patch.into_serde::<BaseNode>().unwrap();
+        match base_node.node_type.as_str() {
+            "Line" => {
+                let patch_line: Line = serde_wasm_bindgen::from_value(patch)?;
+                if let Some(node) = self.data_model.get_node_mut(&patch_line.get_id()) {
+                    if let Some(line) = node.as_any_mut().downcast_mut::<Line>() {
+                        // Update the line properties
+                        line.x1 = patch_line.x1;
+                        line.y1 = patch_line.y1;
+                        line.x2 = patch_line.x2;
+                        line.y2 = patch_line.y2;
+                    } else {
+                        log("Failed to downcast node to Line");
+                    }
+                } else {
+                    log("Node not found");
+                }
+            }
+            _ => {
+                log("Unknown node type");
+            }
+        }
+
+        Ok(JsValue::NULL)
     }
 
     pub fn do_callback(&mut self, callback: &str) {

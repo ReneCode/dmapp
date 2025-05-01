@@ -66,6 +66,10 @@ impl DataModel {
         self.nodes.get(id)
     }
 
+    pub fn get_node_mut(&mut self, id: &str) -> Option<&mut Box<dyn Node>> {
+        self.nodes.get_mut(id)
+    }
+
     pub fn get_current_page_id(&self) -> &str {
         &self.current_page_id
     }
