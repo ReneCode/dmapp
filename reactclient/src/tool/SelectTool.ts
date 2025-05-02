@@ -2,6 +2,7 @@
 
 import { ECEvent } from "./Event";
 import { BaseTool } from "./BaseTool";
+import { Point2d } from "wasm";
 
 export class SelectTool extends BaseTool {
   nr: number = 0;
@@ -17,10 +18,13 @@ export class SelectTool extends BaseTool {
         this.editor.api.set_selection(selection);
 
         let line = this.editor.api.create_line();
-        console.log("Line created:", line);
+        // console.log("Line created:", line);
 
-        line.x1 = event.clientX;
-        line.y1 = event.clientY;
+        let pt = new Point2d(event.clientX, event.clientY);
+        let svg_pt = this.editor.api.client_to_canvas(pt);
+
+        line.x1 = svg_pt.x;
+        line.y1 = svg_pt.y;
 
         this.editor.api.patch_node(line);
 

@@ -1,6 +1,6 @@
 //
 
-use crate::Matrix;
+use crate::{Matrix, Point2d};
 
 pub fn round(x: f64) -> f64 {
     (x * 100.0).round() / 100.0
@@ -101,6 +101,14 @@ impl Viewport {
         self.x = round(self.x + delta_x / self.scale);
         self.y = round(self.y + delta_y / self.scale);
     }
+
+    pub fn client_to_canvas(&self, pt: Point2d) -> Point2d {
+        // Convert client coordinates to canvas coordinates
+        let x = (pt.x + self.x * self.scale) / self.scale;
+        let y = (-pt.y - self.y * self.scale) / self.scale;
+        Point2d::new(x, y)
+    }
+
     // ------------------------
 }
 

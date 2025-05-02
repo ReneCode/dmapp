@@ -1,6 +1,6 @@
 //
 
-use crate::point2d::Point2D;
+use crate::point2d::Point2d;
 
 pub struct Matrix {
     a: f64,
@@ -47,10 +47,10 @@ impl Matrix {
         )
     }
 
-    pub fn multiply(&self, point: &Point2D) -> Point2D {
+    pub fn multiply(&self, point: &Point2d) -> Point2d {
         let x = self.a * point.x + self.b * point.y + self.c;
         let y = self.d * point.x + self.e * point.y + self.f;
-        Point2D::new(x / (self.g * point.x + self.h * point.y + self.i), y)
+        Point2d::new(x / (self.g * point.x + self.h * point.y + self.i), y)
     }
 
     pub fn inverse(&self) -> Option<Self> {
@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn translate() {
-        let pt = Point2D::new(10.0, 20.0);
+        let pt = Point2d::new(10.0, 20.0);
         let translate = Matrix::translate(50.0, 80.0);
         let result = translate.multiply(&pt);
         assert_eq!(result.x, 60.0);
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn scale() {
-        let pt = Point2D::new(10.0, 20.0);
+        let pt = Point2d::new(10.0, 20.0);
         let scale = Matrix::scale(2.0, 3.0);
         let result = scale.multiply(&pt);
         assert_eq!(result.x, 20.0);

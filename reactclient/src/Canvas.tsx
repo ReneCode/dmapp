@@ -7,6 +7,7 @@ import useWindowDimensions from "./hook/useWindowSize";
 
 import "./Canvas.css";
 import { useMiddleMousePanning } from "./hook/useMiddleMousePanning";
+import { Point2d } from "wasm";
 
 export const Canvas = () => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -55,14 +56,6 @@ export const Canvas = () => {
         clientX: event.clientX,
         clientY: event.clientY,
       });
-
-      api.do_callback1((e: any) => {
-        // console.log(">>", e);
-      });
-      // throw new Error("Mouse down event not implemented");
-      let a = 1.0 / 0;
-      return a;
-      // api?.mouse_down(event.clientX, event.clientY);
     }
   };
 
@@ -78,6 +71,11 @@ export const Canvas = () => {
     if (event.buttons === 4) {
       panningMove(event);
     }
+
+    let pt_client = new Point2d(event.clientX, event.clientY);
+    let pt_canvas = api.client_to_canvas(pt_client);
+    console.log("client to canvas", pt_client, pt_canvas);
+
     // api?.mouse_move(event.clientX, event.clientY);
   };
 

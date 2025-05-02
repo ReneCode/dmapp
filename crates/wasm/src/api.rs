@@ -2,7 +2,7 @@ use gloo_utils::format::JsValueSerdeExt;
 use serde::{Deserialize, Serialize};
 //
 
-use algebra::{Point2D, Viewport};
+use algebra::{Point2d, Viewport};
 use datamodel::{Line, Node};
 use wasm_bindgen::prelude::*;
 
@@ -16,26 +16,29 @@ struct BaseNode {
     node_type: String,
 }
 
-#[wasm_bindgen]
-struct Point2DWrapper {
-    x: f64,
-    y: f64,
-}
-impl Point2DWrapper {
-    fn new(x: f64, y: f64) -> Self {
-        Point2DWrapper { x, y }
-    }
-}
-impl From<Point2DWrapper> for Point2D {
-    fn from(wrapper: Point2DWrapper) -> Self {
-        Point2D::new(wrapper.x, wrapper.y)
-    }
-}
-impl From<Point2D> for Point2DWrapper {
-    fn from(point: Point2D) -> Self {
-        Point2DWrapper::new(point.x, point.y)
-    }
-}
+// #[wasm_bindgen]
+// #[wasm_bindgen(js_name = Point)]
+// pub struct Point2DWrapper {
+//     pub x: f64,
+//     pub y: f64,
+// }
+// #[wasm_bindgen]
+// impl Point2DWrapper {
+//     #[wasm_bindgen(constructor)]
+//     pub fn new(x: f64, y: f64) -> Self {
+//         Point2DWrapper { x, y }
+//     }
+// }
+// impl From<Point2DWrapper> for Point2D {
+//     fn from(wrapper: Point2DWrapper) -> Self {
+//         Point2D::new(wrapper.x, wrapper.y)
+//     }
+// }
+// impl From<Point2D> for Point2DWrapper {
+//     fn from(point: Point2D) -> Self {
+//         Point2DWrapper::new(point.x, point.y)
+//     }
+// }
 
 #[wasm_bindgen]
 extern "C" {
@@ -198,28 +201,46 @@ impl ECAPI {
         Ok(JsValue::NULL)
     }
 
+    #[wasm_bindgen]
+    pub fn client_to_canvas(&self, client_pt: Point2d) -> Point2d {
+        // let client_pos = Point2D::from(point);
+        let canvas_pt = self.viewport.client_to_canvas(client_pt);
+        canvas_pt
+
+        // let client_pos = point.into_serde::<Point2D>().unwrap();
+
+        // // Convert client coordinates to canvas coordinates
+        // let canvas_pos = self.viewport.client_to_canvas(client_pos);
+
+        // if let Ok(result) = JsValue::from_serde(&canvas_pos) {
+        //     Ok(result)
+        // } else {
+        //     Err(JsValue::from_str("Failed to convert to JsValue"))
+        // }
+    }
+
     pub fn do_callback(&mut self, callback: &str) {
         // Call the JavaScript callback function
         let js_callback = js_sys::Function::new_no_args(callback);
         js_callback.call0(&JsValue::NULL).unwrap();
     }
 
-    #[wasm_bindgen]
-    pub fn do_callback1(&mut self, callback: &js_sys::Function) {
-        // Call the JavaScript callback function with a string argument
+    // #[wasm_bindgen]
+    // pub fn do_callback1(&mut self, callback: &js_sys::Function) {
+    //     // Call the JavaScript callback function with a string argument
 
-        let s = format!("Callback called with message: {}", 4711);
+    //     let s = format!("Callback called with message: {}", 4711);
 
-        let pt = Point2D::new(1.0, 2.0);
+    //     let pt = Point2D::new(1.0, 2.0);
 
-        let ptw = Point2DWrapper::from(pt);
-        let a = JsValue::from(ptw);
+    //     let ptw = Point2DWrapper::from(pt);
+    //     let a = JsValue::from(ptw);
 
-        callback.call1(&JsValue::NULL, &a).unwrap_or_else(|err| {
-            log(&format!("Error calling callback: {:?}", err));
-            err
-        });
-    }
+    //     callback.call1(&JsValue::NULL, &a).unwrap_or_else(|err| {
+    //         log(&format!("Error calling callback: {:?}", err));
+    //         err
+    //     });
+    // }
 
     #[wasm_bindgen]
     pub fn run_command(&mut self, command_line: String) {
