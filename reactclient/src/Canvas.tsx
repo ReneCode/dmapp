@@ -51,10 +51,14 @@ export const Canvas = () => {
     if (event.buttons === 4) {
       panningStart(event);
     } else {
+      let pt_client = new Point2d(event.clientX, event.clientY);
+      let pt_canvas = api.client_to_canvas(pt_client);
       editor.dispatchEvent({
         type: "mouse_down",
         clientX: event.clientX,
         clientY: event.clientY,
+        canvasX: pt_canvas.x,
+        canvasY: pt_canvas.y,
       });
     }
   };
@@ -74,8 +78,14 @@ export const Canvas = () => {
 
     let pt_client = new Point2d(event.clientX, event.clientY);
     let pt_canvas = api.client_to_canvas(pt_client);
-    console.log("client to canvas", pt_client, pt_canvas);
 
+    editor.dispatchEvent({
+      type: "mouse_move",
+      clientX: event.clientX,
+      clientY: event.clientY,
+      canvasX: pt_canvas.x,
+      canvasY: pt_canvas.y,
+    });
     // api?.mouse_move(event.clientX, event.clientY);
   };
 

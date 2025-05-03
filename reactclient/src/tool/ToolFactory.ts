@@ -3,6 +3,7 @@
 import { Editor } from "../Editor";
 import { BaseTool } from "./BaseTool";
 import { SelectTool } from "./SelectTool";
+import { LineTool } from "./LineTool";
 
 export function createNewTool(
   toolName: string,
@@ -12,6 +13,10 @@ export function createNewTool(
     case "select":
       return new SelectTool(editor);
       break;
+    case "line":
+      return new LineTool(editor);
+      break;
+    // Uncomment and implement the following tools as needed
     // case "Text":
     //   tool = new TextTool(editor);
     //   break;
