@@ -1,25 +1,23 @@
 {
-  "id_counter": 3,
-  "pages": [
-    { "description": "world", "id": "2", "name": "hello", "node_type": "Page" }
-  ],
+  "id_counter": 2,
+  "pages": [],
   "nodes": [
     {
       "id": "1",
       "node_type": "Line",
-      "x1": 5.0,
-      "x2": 3.0,
-      "y1": 4.0,
-      "y2": 56.0
+      "x1": 30.0,
+      "x2": 60.0,
+      "y1": 50.0,
+      "y2": 20.0
     },
     {
       "angle_end": 360.0,
-      "angle_start": 0.0,
-      "id": "3",
+      "angle_start": 25.0,
+      "id": "2",
       "node_type": "Arc",
-      "r": 0.0,
-      "x": 5.0,
-      "y": 3.0
+      "r": 1.0,
+      "x": 2.0,
+      "y": 54.0
     }
   ]
 }
