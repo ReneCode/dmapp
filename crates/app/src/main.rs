@@ -1,84 +1,52 @@
-use core::f64;
-use std::{
-    fs::File,
-    io::{self, BufRead, Write},
-    str::SplitWhitespace,
-};
+//
+// https://github.com/snapview/tokio-tungstenite/blob/master/examples/client.rs
+//
 
-use command::{ArcCommand, CommandHandler, CommandLine, LineCommand, PageCommand};
-use datamodel::{DataModel, Line, Node, NodeType};
+use std::env;
 
-fn execute_list(
-    dm: &DataModel,
-    command_handler: &CommandHandler,
-    parameter: &mut SplitWhitespace<'_>,
-) {
-    let node_type = parameter.next().unwrap_or("").to_string();
+use futures_util::{future, pin_mut, StreamExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
-    match node_type.as_str() {
-        "commands" => {
-            command_handler.list_commands();
-        }
-        "pages" => {
-            for page in dm.get_pages() {
-                println!("Page ID: {}, Name: {}", page.get_id(), page.get_name());
-            }
-        }
-        "page" => {
-            let id = parameter.next().unwrap_or("").to_string();
-            if let Some(page) = dm.get_page(&id) {
-                println!("Page ID: {}, Name: {}", page.get_id(), page.get_name());
-            } else {
-                eprintln!("Error: Page with ID {} not found", id);
-            }
-        }
+#[tokio::main]
+async fn main() {
+    let url = "ws://localhost:9002";
 
-        _ => {
-            eprintln!("Error: Unknown node type: {}", node_type);
-        }
-    }
+    // let url = env::args()
+    //     .nth(1)
+    //     .unwrap_or_else(|| panic!("this program requires at least one argument"));
+
+    let (stdin_tx, stdin_rx) = futures_channel::mpsc::unbounded();
+    tokio::spawn(read_stdin(stdin_tx));
+
+    let (ws_stream, _) = connect_async(url.to_string())
+        .await
+        .expect("Failed to connect");
+    println!("WebSocket handshake has been successfully completed");
+
+    let (write, read) = ws_stream.split();
+
+    let stdin_to_ws = stdin_rx.map(Ok).forward(write);
+    let ws_to_stdout = {
+        read.for_each(|message| async {
+            let data = message.unwrap().into_data();
+            tokio::io::stdout().write_all(&data).await.unwrap();
+        })
+    };
+
+    pin_mut!(stdin_to_ws, ws_to_stdout);
+    future::select(stdin_to_ws, ws_to_stdout).await;
 }
 
-fn main() {
-    let stdin = io::stdin();
-    let handle = stdin.lock();
-
-    println!("Please enter command ('exit' or Ctrl+D to end):");
-
-    let mut data_model = DataModel::default();
-    let mut command_handler = CommandHandler::new();
-
-    // let commandline = command::CommandLine::new();
-
-    for line in handle.lines() {
-        match line {
-            Ok(line) => {
-                if line == "quit" {
-                    break;
-                }
-
-                CommandLine::parse(&mut data_model, line.as_str())
-                    .map(|cmd| {
-                        command_handler.execute(&mut data_model, cmd);
-                    })
-                    .unwrap_or_else(|err| {
-                        eprintln!("Error: {}", err);
-                    });
-
-                // let mut parts = line.split_whitespace();
-                // let command_name = parts.next().unwrap_or("").to_string();
-
-                // match command_name.as_str() {
-                //     "create" => excecute_create(&mut data_model, &mut command_handler, &mut parts),
-                //     "list" => execute_list(&data_model, &command_handler, &mut parts),
-                //     "save" => save_data(&data_model),
-                //     "undo" => command_handler.undo(&mut data_model),
-                //     _ => {
-                //         eprintln!("Error: Unknown command: {}", command_name);
-                //     }
-                // }
-            }
-            Err(error) => eprintln!("Error reading line: {}", error),
-        }
+async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
+    let mut stdin = tokio::io::stdin();
+    loop {
+        let mut buf = vec![0; 1024];
+        let n = match stdin.read(&mut buf).await {
+            Err(_) | Ok(0) => break,
+            Ok(n) => n,
+        };
+        buf.truncate(n);
+        tx.unbounded_send(Message::binary(buf)).unwrap();
     }
 }

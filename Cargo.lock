@@ -90,8 +90,12 @@ version = "0.1.0"
 dependencies = [
  "command",
  "datamodel",
+ "futures-channel",
+ "futures-util",
  "serde",
  "serde_json",
+ "tokio",
+ "tokio-tungstenite",
 ]
 
 [[package]]
